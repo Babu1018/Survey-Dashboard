@@ -1,0 +1,64 @@
+- generic [ref=f8e3]:
+  - complementary [ref=f8e4]:
+    - generic [ref=f8e6]:
+      - generic [ref=f8e7]:
+        - generic [ref=f8e8]: SF
+        - generic [ref=f8e9]: SurveyFlow
+      - button [ref=f8e10] [cursor=pointer]
+    - navigation [ref=f8e14]:
+      - link "Dashboard" [ref=f8e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f8e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f8e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f8e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f8e48]:
+    - banner [ref=f8e49]:
+      - generic [ref=f8e51]:
+        - button "Notifications" [ref=f8e53] [cursor=pointer]
+        - generic [ref=f8e59] [cursor=pointer]:
+          - generic [ref=f8e60]: AD
+          - generic [ref=f8e61]:
+            - generic [ref=f8e62]: Admin User
+            - generic [ref=f8e63]: Admin
+    - main [ref=f8e66]:
+      - generic [ref=f8e68]:
+        - generic [ref=f8e70]:
+          - generic [ref=f8e71]:
+            - heading "Manage Users" [level=1] [ref=f8e72]
+            - paragraph [ref=f8e73]: Manage user profiles, roles, permissions, and access across the platform.
+          - generic [ref=f8e74]:
+            - button "Create User" [ref=f8e75] [cursor=pointer]
+            - button "Add Groups" [ref=f8e77] [cursor=pointer]
+        - generic [ref=f8e79]:
+          - generic [ref=f8e80]:
+            - textbox "Search users by name.." [ref=f8e85]
+            - generic [ref=f8e86]:
+              - generic [ref=f8e87]: Sort By
+              - combobox [ref=f8e89] [cursor=pointer]:
+                - option "All Roles" [selected]
+                - option "Admin"
+                - option "Manager"
+                - option "User"
+            - generic [ref=f8e90]:
+              - generic [ref=f8e91]: Categorize by
+              - combobox [ref=f8e93] [cursor=pointer]:
+                - option "Status" [selected]
+                - option "Active"
+                - option "Suspended"
+          - generic [ref=f8e94]:
+            - generic [ref=f8e95]:
+              - heading "Manage Users" [level=3] [ref=f8e96]
+              - generic [ref=f8e97]:
+                - generic [ref=f8e98] [cursor=pointer]: Select
+                - generic [ref=f8e99] [cursor=pointer]: View All
+            - generic [ref=f8e103]:
+              - generic [ref=f8e104]:
+                - generic [ref=f8e105]: Name
+                - generic [ref=f8e106]: Role
+                - generic [ref=f8e107]: Created on
+                - generic [ref=f8e108]: Status
+                - generic [ref=f8e109]: Actions
+              - generic [ref=f8e110]: No users found matching ""

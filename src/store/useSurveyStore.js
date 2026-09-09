@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import useAuthStore from './useAuthStore';
-
-const API = 'http://localhost:8000';
+import * as surveyService from '../services/surveyService';
+import * as groupService from '../services/groupService';
+import * as userService from '../services/userService';
 
 const useSurveyStore = create((set, get) => ({
   surveys: [],
@@ -13,17 +14,10 @@ const useSurveyStore = create((set, get) => ({
     const { token } = useAuthStore.getState();
     set({ loading: true });
     try {
-      const url = category ? `/api/surveys/?category=${category}` : '/api/surveys/';
-      const response = await fetch(`${API}${url}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to fetch surveys');
-      }
-      const data = await response.json();
+      const data = await surveyService.fetchSurveys(token, category);
       set({ surveys: data, loading: false });
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to fetch surveys", error);
       set({ loading: false });
     }
@@ -33,16 +27,10 @@ const useSurveyStore = create((set, get) => ({
     const { token } = useAuthStore.getState();
     set({ loading: true });
     try {
-      const response = await fetch(`${API}/api/surveys/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to fetch survey detail');
-      }
-      const data = await response.json();
+      const data = await surveyService.fetchSurveyDetail(token, id);
       set({ currentSurvey: data, loading: false });
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to fetch survey detail", error);
       set({ loading: false });
     }
@@ -51,22 +39,11 @@ const useSurveyStore = create((set, get) => ({
   createSurvey: async (surveyData) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(surveyData),
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to create survey');
-      }
-      const newSurvey = await response.json();
+      const newSurvey = await surveyService.createSurvey(token, surveyData);
       set((state) => ({ surveys: [...state.surveys, newSurvey] }));
       return newSurvey;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to create survey", error);
     }
   },
@@ -74,21 +51,10 @@ const useSurveyStore = create((set, get) => ({
   addQuestions: async (surveyId, questions) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/${surveyId}/questions`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(questions),
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to add questions');
-      }
+      await surveyService.addQuestions(token, surveyId, questions);
       return true;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to add questions", error);
       throw error;
     }
@@ -97,25 +63,13 @@ const useSurveyStore = create((set, get) => ({
   updateSurvey: async (id, surveyData) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(surveyData),
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to update survey');
-      }
-      const updated = await response.json();
+      const updated = await surveyService.updateSurvey(token, id, surveyData);
       set((state) => ({
         surveys: state.surveys.map(s => s.id === Number(id) ? updated : s)
       }));
       return updated;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to update survey", error);
       throw error;
     }
@@ -124,17 +78,10 @@ const useSurveyStore = create((set, get) => ({
   clearQuestions: async (surveyId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/${surveyId}/questions`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to clear questions');
-      }
+      await surveyService.clearQuestions(token, surveyId);
       return true;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to clear questions", error);
       throw error;
     }
@@ -143,21 +90,13 @@ const useSurveyStore = create((set, get) => ({
   deleteSurvey: async (surveyId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/${surveyId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || 'Failed to delete survey');
-      }
-      
+      await surveyService.deleteSurvey(token, surveyId);
       set((state) => ({
         surveys: state.surveys.filter((s) => s.id !== surveyId)
       }));
       return true;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to delete survey", error);
       throw error;
     }
@@ -167,23 +106,12 @@ const useSurveyStore = create((set, get) => ({
     const { token } = useAuthStore.getState();
     set({ loading: true });
     try {
-      const response = await fetch(`${API}/api/surveys/bulk-delete`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ category })
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to delete category');
-      }
+      await surveyService.deleteSurveysByCategory(token, category);
       await get().fetchSurveys();
       set({ loading: false });
       return true;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to delete surveys by category", error);
       set({ loading: false });
       throw error;
@@ -194,33 +122,16 @@ const useSurveyStore = create((set, get) => ({
     const { token } = useAuthStore.getState();
     try {
       // 1. Get full detail
-      const res = await fetch(`${API}/api/surveys/${surveyId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) {
-        if (res.status === 401) useAuthStore.getState().logout();
-        const err = await res.json();
-        throw new Error(err.detail || 'Failed to fetch survey for cloning');
-      }
-      const data = await res.json();
-      
+      const data = await surveyService.fetchSurveyDetail(token, surveyId);
+
       // 2. Create new survey
-      const newSurveyRes = await fetch(`${API}/api/surveys/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          title: `${data.title} (Copy)`,
-          category: data.category,
-          description: data.description || "",
-          is_active: data.is_active
-        }),
+      const newSurvey = await surveyService.createSurvey(token, {
+        title: `${data.title} (Copy)`,
+        category: data.category,
+        description: data.description || "",
+        is_active: data.is_active
       });
-      if (!newSurveyRes.ok) {
-        const err = await newSurveyRes.json();
-        throw new Error(err.detail || 'Failed to create cloned survey');
-      }
-      const newSurvey = await newSurveyRes.json();
-      
+
       // 3. Clone questions
       if (data.questions && data.questions.length > 0) {
         const questionsToCopy = data.questions.map(q => ({
@@ -244,38 +155,33 @@ const useSurveyStore = create((set, get) => ({
             media_url: o.media_url || ''
           })) || []
         }));
-        
-        const qRes = await fetch(`${API}/api/surveys/${newSurvey.id}/questions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(questionsToCopy),
-        });
-        if (!qRes.ok) throw new Error('Failed to copy questions to clone');
+
+        await surveyService.addQuestions(token, newSurvey.id, questionsToCopy);
       }
-      
+
       await get().fetchSurveys();
       return true;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to clone survey", error);
       throw error;
     }
   },
 
-  cleanupMedia: async () => {
+  surveyReport: null,
+  surveyReportLoading: false,
+
+  fetchSurveyReport: async (id) => {
     const { token } = useAuthStore.getState();
+    set({ surveyReportLoading: true });
     try {
-      const response = await fetch(`${API}/api/surveys/maintenance/cleanup`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to clean up media');
-      }
-      return await response.json();
+      const data = await surveyService.fetchSurveyReport(token, id);
+      set({ surveyReport: data, surveyReportLoading: false });
+      return data;
     } catch (error) {
-      console.error("Failed to clean up media", error);
+      if (error.status === 401) useAuthStore.getState().logout();
+      console.error("Failed to fetch survey report", error);
+      set({ surveyReportLoading: false });
       throw error;
     }
   },
@@ -283,17 +189,9 @@ const useSurveyStore = create((set, get) => ({
   repairDatabase: async () => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/surveys/maintenance/repair`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to repair database');
-      }
-      return await response.json();
+      return await surveyService.repairDatabase(token);
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to repair database", error);
       throw error;
     }
@@ -305,16 +203,10 @@ const useSurveyStore = create((set, get) => ({
   fetchGroups: async () => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to fetch groups');
-      }
-      const data = await response.json();
+      const data = await groupService.fetchGroups(token);
       set({ groups: data });
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to fetch groups", error);
     }
   },
@@ -322,16 +214,7 @@ const useSurveyStore = create((set, get) => ({
   createGroup: async (name) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ name }),
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to create group');
-      }
-      const newGroup = await response.json();
+      const newGroup = await groupService.createGroup(token, name);
       if (newGroup && newGroup.id) {
         set((state) => ({ groups: [...state.groups, newGroup] }));
       } else {
@@ -339,6 +222,7 @@ const useSurveyStore = create((set, get) => ({
       }
       return newGroup;
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to create group", error);
     }
   },
@@ -346,12 +230,7 @@ const useSurveyStore = create((set, get) => ({
   assignSurveyToGroup: async (groupId, surveyId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}/assign/${surveyId}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Failed to assign survey to group');
-      const data = await response.json();
+      const data = await groupService.assignSurveyToGroup(token, groupId, surveyId);
       if (data && data.id) {
         set((state) => ({
           groups: state.groups.map(g => g.id === groupId ? data : g)
@@ -368,12 +247,7 @@ const useSurveyStore = create((set, get) => ({
   unassignSurveyFromGroup: async (groupId, surveyId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}/assign/${surveyId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Failed to unassign survey from group');
-      const data = await response.json();
+      const data = await groupService.unassignSurveyFromGroup(token, groupId, surveyId);
       if (data && data.id) {
         set((state) => ({
           groups: state.groups.map(g => g.id === groupId ? data : g)
@@ -390,11 +264,7 @@ const useSurveyStore = create((set, get) => ({
   deleteGroup: async (groupId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Failed to delete group');
+      await groupService.deleteGroup(token, groupId);
       set((state) => ({
         groups: state.groups.filter((g) => g.id !== groupId)
       }));
@@ -408,16 +278,7 @@ const useSurveyStore = create((set, get) => ({
   updateGroup: async (groupId, groupData) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify(groupData),
-      });
-      if (!response.ok) throw new Error('Failed to update group');
-      const data = await response.json();
+      const data = await groupService.updateGroup(token, groupId, groupData);
       if (data && data.id) {
         set((state) => ({
           groups: state.groups.map(g => g.id === groupId ? data : g)
@@ -432,15 +293,24 @@ const useSurveyStore = create((set, get) => ({
     }
   },
 
+  setGroupManager: async (groupId, managerId) => {
+    const { token } = useAuthStore.getState();
+    try {
+      const data = await groupService.setGroupManager(token, groupId, managerId);
+      set((state) => ({
+        groups: state.groups.map(g => g.id === groupId ? data : g)
+      }));
+      return data;
+    } catch (error) {
+      console.error("Failed to set group manager", error);
+      throw error;
+    }
+  },
+
   assignUserToGroup: async (groupId, userId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}/users/${userId}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Failed to add user to group');
-      const data = await response.json();
+      const data = await groupService.assignUserToGroup(token, groupId, userId);
       if (data && data.id) {
         set((state) => ({
           groups: state.groups.map(g => g.id === groupId ? data : g)
@@ -457,12 +327,7 @@ const useSurveyStore = create((set, get) => ({
   unassignUserFromGroup: async (groupId, userId) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/groups/${groupId}/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error('Failed to remove user from group');
-      const data = await response.json();
+      const data = await groupService.unassignUserFromGroup(token, groupId, userId);
       if (data && data.id) {
         set((state) => ({
           groups: state.groups.map(g => g.id === groupId ? data : g)
@@ -483,62 +348,70 @@ const useSurveyStore = create((set, get) => ({
   fetchUsers: async () => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/users/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        if (response.status === 401) useAuthStore.getState().logout();
-        throw new Error('Failed to fetch users');
-      }
-      const data = await response.json();
+      const data = await userService.fetchUsers(token);
       set({ users: data });
     } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
       console.error("Failed to fetch users", error);
+    }
+  },
+
+  // ─── Login logs ───────────────────────────────────────────
+  loginLogs: [],
+  loginLogsLoading: false,
+
+  fetchLoginLogs: async () => {
+    const { token } = useAuthStore.getState();
+    set({ loginLogsLoading: true });
+    try {
+      const data = await userService.fetchLoginLogs(token);
+      set({ loginLogs: data, loginLogsLoading: false });
+    } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
+      console.error("Failed to fetch login logs", error);
+      set({ loginLogsLoading: false });
+    }
+  },
+
+  // ─── My submissions ─────────────────────────────────────────
+  mySubmissions: [],
+  mySubmissionsLoading: false,
+
+  fetchMySubmissions: async () => {
+    const { token } = useAuthStore.getState();
+    set({ mySubmissionsLoading: true });
+    try {
+      const data = await surveyService.fetchMySubmissions(token);
+      set({ mySubmissions: data, mySubmissionsLoading: false });
+    } catch (error) {
+      if (error.status === 401) useAuthStore.getState().logout();
+      console.error("Failed to fetch my submissions", error);
+      set({ mySubmissionsLoading: false });
     }
   },
 
   createUser: async (userData) => {
     const { token } = useAuthStore.getState();
-    const response = await fetch(`${API}/api/users/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.detail || 'Failed to create user');
-    }
-    const newUser = await response.json();
+    const newUser = await userService.createUser(token, userData);
     set((state) => ({ users: [...state.users, newUser] }));
     return newUser;
   },
 
-  deleteUser: async (userId) => {
+  deleteUser: async (userId, deleteHistory = false) => {
     const { token } = useAuthStore.getState();
-    const response = await fetch(`${API}/api/users/${userId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (response.ok) {
+    try {
+      await userService.deleteUser(token, userId, deleteHistory);
       set((state) => ({ users: state.users.filter(u => u.id !== userId) }));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   },
 
   updateUser: async (userId, userData) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(userData),
-      });
-      if (!response.ok) throw new Error('Failed to update user');
-      const updated = await response.json();
+      const updated = await userService.updateUser(token, userId, userData);
       set((state) => ({
         users: state.users.map(u => u.id === userId ? updated : u)
       }));
@@ -552,29 +425,22 @@ const useSurveyStore = create((set, get) => ({
 
   assignSurveyToUser: async (userId, surveyId) => {
     const { token } = useAuthStore.getState();
-    const response = await fetch(`${API}/api/users/${userId}/assign-survey/${surveyId}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error('Failed to assign survey');
-    const updated = await response.json();
-    set((state) => ({ users: state.users.map(u => u.id === userId ? updated : u) }));
+    const updated = await userService.assignSurveyToUser(token, userId, surveyId);
+    set((state) => ({ users: state.users.map(u => u.id === Number(userId) ? updated : u) }));
     return updated;
   },
 
   unassignSurveyFromUser: async (userId, surveyId) => {
     const { token } = useAuthStore.getState();
-    const response = await fetch(`${API}/api/users/${userId}/assign-survey/${surveyId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!response.ok) throw new Error('Failed to unassign survey');
-    const updated = await response.json();
-    set((state) => ({ users: state.users.map(u => u.id === userId ? updated : u) }));
+    const updated = await userService.unassignSurveyFromUser(token, userId, surveyId);
+    set((state) => ({ users: state.users.map(u => u.id === Number(userId) ? updated : u) }));
     return updated;
+  },
+
+  notifyGoal: async (userId, days, count) => {
+    const { token } = useAuthStore.getState();
+    return userService.notifyGoal(token, userId, days, count);
   },
 }));
 
 export default useSurveyStore;
-
-

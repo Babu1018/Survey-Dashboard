@@ -1,0 +1,130 @@
+- generic [ref=f19e3]:
+  - complementary [ref=f19e4]:
+    - generic [ref=f19e6]:
+      - generic [ref=f19e7]:
+        - generic [ref=f19e8]: SF
+        - generic [ref=f19e9]: SurveyFlow
+      - button [ref=f19e10] [cursor=pointer]
+    - navigation [ref=f19e14]:
+      - link "Dashboard" [ref=f19e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f19e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f19e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f19e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f19e48]:
+    - banner [ref=f19e49]:
+      - generic [ref=f19e51]:
+        - button "Notifications" [ref=f19e53] [cursor=pointer]
+        - generic [ref=f19e59] [cursor=pointer]:
+          - generic [ref=f19e60]: AD
+          - generic [ref=f19e61]:
+            - generic [ref=f19e62]: Admin User
+            - generic [ref=f19e63]: Admin
+    - main [ref=f19e66]:
+      - generic [ref=f19e68]:
+        - generic [ref=f19e69]:
+          - generic [ref=f19e71]:
+            - button "Back" [ref=f19e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f19e76]
+          - generic [ref=f19e77]:
+            - button "Download Template" [ref=f19e79] [cursor=pointer]
+            - button "Upload Type" [ref=f19e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f19e93] [cursor=pointer]
+            - button "Save" [ref=f19e96] [cursor=pointer]
+        - generic [ref=f19e101]:
+          - generic [ref=f19e102]:
+            - generic [ref=f19e103]:
+              - generic [ref=f19e104]: SURVEY NAME *
+              - textbox "Brand Attitudes Survey" [ref=f19e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f19e106]:
+              - generic [ref=f19e107]: SURVEY BRANCH *
+              - generic [ref=f19e108]:
+                - combobox [ref=f19e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f19e111] [cursor=pointer]
+          - generic [ref=f19e115]:
+            - generic [ref=f19e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f19e117]: Measures attitudes towards trying new products and staying with familiar brands.
+        - generic [ref=f19e132]:
+          - generic "Drag to reorder or move to another section" [ref=f19e133]
+          - generic [ref=f19e143]:
+            - generic [ref=f19e144]:
+              - generic [ref=f19e145]:
+                - generic [ref=f19e146]: "1"
+                - generic [ref=f19e147]: NEW QUESTION
+              - generic [ref=f19e148]:
+                - button "Question Options" [ref=f19e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f19e155] [cursor=pointer]
+                - button [ref=f19e159] [cursor=pointer]
+            - generic [ref=f19e163]:
+              - generic [ref=f19e164]:
+                - generic [ref=f19e165]:
+                  - generic [ref=f19e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f19e167]: "Please say how much do you agree or disagree with the following statements:"
+                - generic [ref=f19e168]:
+                  - generic [ref=f19e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f19e171] [cursor=pointer]
+              - generic [ref=f19e173]:
+                - generic [ref=f19e175]:
+                  - generic [ref=f19e176]: ANSWER TYPE *
+                  - combobox [ref=f19e177]:
+                    - option "Short Text Answer"
+                    - option "Paragraph Answer"
+                    - option "Number Input"
+                    - option "Phone Number (10 digits)"
+                    - option "Single Choice (Radio Buttons)"
+                    - option "Multiple Choice (Checkboxes)"
+                    - option "Rating Scale"
+                    - option "Ranking (Drag to Order)"
+                    - option "Matrix / Grid" [selected]
+                    - option "Media Upload"
+                - generic [ref=f19e190]:
+                  - generic [ref=f19e191]:
+                    - generic [ref=f19e192]: MATRIX / GRID SETTINGS
+                    - generic [ref=f19e193] [cursor=pointer]:
+                      - checkbox "Allow multiple answers per row (checkbox grid)" [checked] [ref=f19e194]
+                      - text: Allow multiple answers per row (checkbox grid)
+                  - generic [ref=f19e195]:
+                    - generic [ref=f19e196]:
+                      - generic [ref=f19e197]: Rows — statements (4), one per line
+                      - textbox "Product Quality Customer Service Support Pricing" [ref=f19e198]:
+                        - /placeholder: "Product Quality\nCustomer Service\nSupport\nPricing"
+                        - text: I like to be the first one to try a new product. I want to read lots of reviews before buying a product. I generally stick with products from brands I know well. I am willing to experiment with brands I do not know well.
+                    - generic [ref=f19e199]:
+                      - generic [ref=f19e200]:
+                        - generic [ref=f19e201]: Columns — choices (5), one per line
+                        - button "Very Bad…Very Good" [ref=f19e202] [cursor=pointer]
+                        - button "Very Dissatisfied…Very Satisfied" [ref=f19e203] [cursor=pointer]
+                      - textbox "Very Bad Bad Average Good Very Good" [ref=f19e204]:
+                        - /placeholder: "Very Bad\nBad\nAverage\nGood\nVery Good"
+                        - text: Strongly disagree Disagree Neutral Agree Strongly agree
+                  - generic [ref=f19e205]: Respondents will answer 4 rows against 5 choices, picking any number per row.
+        - generic [ref=f19e178]:
+          - generic [ref=f19e179]:
+            - button "Add Section" [ref=f19e180] [cursor=pointer]
+            - button "Add Question" [ref=f19e182] [cursor=pointer]
+          - button "Save" [ref=f19e184] [cursor=pointer]
+        - generic [ref=f19e417]:
+          - generic [ref=f19e419]:
+            - generic [ref=f19e420]:
+              - button "Exit Test" [ref=f19e421] [cursor=pointer]
+              - generic "This is a dry run of the survey. Nothing is saved." [ref=f19e424]: Test Mode — nothing is saved
+            - generic [ref=f19e429]:
+              - generic [ref=f19e430]: A
+              - generic [ref=f19e431]:
+                - generic [ref=f19e432]: admin
+                - generic [ref=f19e433]: Admin
+          - generic [ref=f19e436]:
+            - generic [ref=f19e437]:
+              - generic [ref=f19e438]: Respondent Identification (test)
+              - textbox "Enter your registered email ID" [ref=f19e443]: omagaffbabu007@gmail.com
+              - paragraph [ref=f19e444]: Shown to real respondents to track their progress. In Test Mode nothing is recorded — just continue.
+            - button "Start Survey" [ref=f19e445] [cursor=pointer]

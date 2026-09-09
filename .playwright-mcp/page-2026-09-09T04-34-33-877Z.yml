@@ -1,0 +1,48 @@
+- generic [ref=f4e3]:
+  - complementary [ref=f4e4]:
+    - generic [ref=f4e6]:
+      - generic [ref=f4e7]:
+        - generic [ref=f4e8]: SF
+        - generic [ref=f4e9]: SurveyFlow
+      - button [ref=f4e10] [cursor=pointer]
+    - navigation [ref=f4e14]:
+      - link "Dashboard" [ref=f4e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f4e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f4e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f4e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f4e48]:
+    - banner [ref=f4e49]:
+      - generic [ref=f4e51]:
+        - button "Notifications" [ref=f4e53] [cursor=pointer]
+        - generic [ref=f4e59] [cursor=pointer]:
+          - generic [ref=f4e60]: AD
+          - generic [ref=f4e61]:
+            - generic [ref=f4e62]: Admin User
+            - generic [ref=f4e63]: Admin
+    - main [ref=f4e66]:
+      - generic [ref=f4e68]:
+        - generic [ref=f4e69]:
+          - heading "Users" [level=1] [ref=f4e70]
+          - paragraph [ref=f4e71]: View all the Survey users assigned
+        - generic [ref=f4e72]:
+          - generic [ref=f4e73]:
+            - generic [ref=f4e74]: Total Users
+            - generic [ref=f4e82]: "0"
+          - generic [ref=f4e83]:
+            - generic [ref=f4e84]: Active Users
+            - generic [ref=f4e90]: "0"
+          - generic [ref=f4e91]:
+            - generic [ref=f4e92]: Total Submissions
+            - generic [ref=f4e98]: "0"
+          - generic [ref=f4e99]:
+            - generic [ref=f4e100]: Inactive Users
+            - generic [ref=f4e108]: "0"
+        - generic [ref=f4e109]:
+          - generic [ref=f4e110]:
+            - heading "Performance" [level=3] [ref=f4e111]
+            - button "View All" [ref=f4e112] [cursor=pointer]
+          - generic [ref=f4e115]: No users to show yet.

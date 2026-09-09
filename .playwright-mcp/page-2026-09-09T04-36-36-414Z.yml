@@ -1,0 +1,14 @@
+- generic [ref=f12e4]:
+  - generic [ref=f12e5]:
+    - heading "Survey Management Application" [level=1] [ref=f12e10]
+    - paragraph [ref=f12e11]: Sign in to your account
+  - generic [ref=f12e12]:
+    - textbox "Gmail address" [ref=f12e18]
+    - generic [ref=f12e19]:
+      - textbox "Password" [ref=f12e24]
+      - button [ref=f12e25] [cursor=pointer]
+    - generic [ref=f12e29]:
+      - button "Sign in with Authentik SSO" [ref=f12e30] [cursor=pointer]
+      - button "Forgot password?" [ref=f12e31] [cursor=pointer]
+    - button "Sign In" [ref=f12e32] [cursor=pointer]
+  - paragraph [ref=f12e34]: Restricted access for authorized personnel only.

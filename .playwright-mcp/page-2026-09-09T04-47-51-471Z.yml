@@ -1,0 +1,60 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e6]:
+      - generic [ref=f16e7]:
+        - generic [ref=f16e8]: SF
+        - generic [ref=f16e9]: SurveyFlow
+      - button [ref=f16e10] [cursor=pointer]
+    - navigation [ref=f16e14]:
+      - link "Dashboard" [ref=f16e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f16e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f16e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f16e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f16e48]:
+    - banner [ref=f16e49]:
+      - generic [ref=f16e51]:
+        - button "Notifications" [ref=f16e53] [cursor=pointer]
+        - generic [ref=f16e59] [cursor=pointer]:
+          - generic [ref=f16e60]: AD
+          - generic [ref=f16e61]:
+            - generic [ref=f16e62]: Admin User
+            - generic [ref=f16e63]: Admin
+    - main [ref=f16e66]:
+      - generic [ref=f16e68]:
+        - generic [ref=f16e69]:
+          - generic [ref=f16e71]:
+            - button "Back" [ref=f16e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f16e76]
+          - generic [ref=f16e77]:
+            - button "Download Template" [ref=f16e79] [cursor=pointer]
+            - button "Upload Type" [ref=f16e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f16e93] [cursor=pointer]
+            - button "Save" [ref=f16e96] [cursor=pointer]
+        - generic [ref=f16e101]:
+          - generic [ref=f16e102]:
+            - generic [ref=f16e103]:
+              - generic [ref=f16e104]: SURVEY NAME *
+              - textbox "e.g. Technical Skills Assessment" [ref=f16e105]
+            - generic [ref=f16e106]:
+              - generic [ref=f16e107]: SURVEY BRANCH *
+              - generic [ref=f16e108]:
+                - combobox [ref=f16e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f16e111] [cursor=pointer]
+          - generic [ref=f16e115]:
+            - generic [ref=f16e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f16e117]
+        - generic [ref=f16e118]:
+          - generic [ref=f16e123]: No questions yet
+          - paragraph [ref=f16e124]: Add your first question to start building the survey. Choose from short text, multiple choice, ratings, and more.
+          - generic [ref=f16e125]:
+            - button "Add Section" [ref=f16e126] [cursor=pointer]
+            - button "Add First Question" [ref=f16e128] [cursor=pointer]

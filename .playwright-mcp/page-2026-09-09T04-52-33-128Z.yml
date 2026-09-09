@@ -1,0 +1,43 @@
+- generic [ref=f18e3]:
+  - complementary [ref=f18e4]:
+    - generic [ref=f18e6]:
+      - generic [ref=f18e7]:
+        - generic [ref=f18e8]: SF
+        - generic [ref=f18e9]: SurveyFlow
+      - button [ref=f18e10] [cursor=pointer]
+    - navigation [ref=f18e14]:
+      - link "Dashboard" [ref=f18e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f18e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f18e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f18e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f18e48]:
+    - banner [ref=f18e49]:
+      - generic [ref=f18e51]:
+        - button "Notifications" [ref=f18e53] [cursor=pointer]
+        - generic [ref=f18e59] [cursor=pointer]:
+          - generic [ref=f18e60]: AD
+          - generic [ref=f18e61]:
+            - generic [ref=f18e62]: Admin User
+            - generic [ref=f18e63]: Admin
+    - main [ref=f18e66]:
+      - generic [ref=f18e68]:
+        - button "Back" [ref=f18e69] [cursor=pointer]
+        - generic [ref=f18e72]:
+          - generic [ref=f18e79]:
+            - heading "AI" [level=1] [ref=f18e80]
+            - paragraph [ref=f18e81]: Survey Category
+          - generic [ref=f18e82]:
+            - generic [ref=f18e83]:
+              - generic [ref=f18e84]: "0"
+              - generic [ref=f18e85]: Total Users
+            - generic [ref=f18e86]:
+              - generic [ref=f18e87]: "0"
+              - generic [ref=f18e88]: Total Surveys
+            - generic [ref=f18e89]:
+              - generic [ref=f18e90]: "0"
+              - generic [ref=f18e91]: Total Responses
+        - generic [ref=f18e92]: No surveys in this category.

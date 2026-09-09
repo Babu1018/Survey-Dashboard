@@ -1,0 +1,146 @@
+- generic [ref=f17e3]:
+  - complementary [ref=f17e4]:
+    - generic [ref=f17e6]:
+      - generic [ref=f17e7]:
+        - generic [ref=f17e8]: SF
+        - generic [ref=f17e9]: SurveyFlow
+      - button [ref=f17e10] [cursor=pointer]
+    - navigation [ref=f17e14]:
+      - link "Dashboard" [ref=f17e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f17e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f17e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f17e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f17e48]:
+    - banner [ref=f17e49]:
+      - generic [ref=f17e51]:
+        - button "Notifications" [ref=f17e53] [cursor=pointer]
+        - generic [ref=f17e59] [cursor=pointer]:
+          - generic [ref=f17e60]: AD
+          - generic [ref=f17e61]:
+            - generic [ref=f17e62]: Admin User
+            - generic [ref=f17e63]: Admin
+    - main [ref=f17e66]:
+      - generic [ref=f17e68]:
+        - generic [ref=f17e70]:
+          - generic [ref=f17e71]:
+            - heading "Manage Users" [level=1] [ref=f17e72]
+            - paragraph [ref=f17e73]: Manage user profiles, roles, permissions, and access across the platform.
+          - generic [ref=f17e74]:
+            - button "Create User" [active] [ref=f17e75] [cursor=pointer]
+            - button "Add Groups" [ref=f17e77] [cursor=pointer]
+        - generic [ref=f17e79]:
+          - generic [ref=f17e80]:
+            - textbox "Search users by name.." [ref=f17e85]
+            - generic [ref=f17e86]:
+              - generic [ref=f17e87]: Sort By
+              - combobox [ref=f17e89] [cursor=pointer]:
+                - option "All Roles" [selected]
+                - option "Admin"
+                - option "Manager"
+                - option "User"
+            - generic [ref=f17e90]:
+              - generic [ref=f17e91]: Categorize by
+              - combobox [ref=f17e93] [cursor=pointer]:
+                - option "Status" [selected]
+                - option "Active"
+                - option "Suspended"
+          - generic [ref=f17e94]:
+            - generic [ref=f17e95]:
+              - heading "Manage Users" [level=3] [ref=f17e96]
+              - generic [ref=f17e97]:
+                - generic [ref=f17e98] [cursor=pointer]: Select
+                - generic [ref=f17e99] [cursor=pointer]: View All
+            - generic [ref=f17e103]:
+              - generic [ref=f17e104]:
+                - generic [ref=f17e105]: Name
+                - generic [ref=f17e106]: Role
+                - generic [ref=f17e107]: Created on
+                - generic [ref=f17e108]: Status
+                - generic [ref=f17e109]: Actions
+              - generic [ref=f17e111] [cursor=pointer]:
+                - generic [ref=f17e112]:
+                  - generic [ref=f17e113]: A
+                  - generic [ref=f17e114]:
+                    - generic [ref=f17e115]: Admin
+                    - generic [ref=f17e116]: omagaffbabu007@gmail.com
+                - generic [ref=f17e117]: Admin
+                - generic [ref=f17e118]: 2026-04-22
+                - generic [ref=f17e119]: Active
+                - generic [ref=f17e120]:
+                  - button "Assign Manager / Survey" [ref=f17e121]
+                  - button "Edit User" [ref=f17e126]
+              - generic [ref=f17e129] [cursor=pointer]:
+                - generic [ref=f17e130]:
+                  - generic [ref=f17e131]: T
+                  - generic [ref=f17e132]:
+                    - generic [ref=f17e133]: Tester1
+                    - generic [ref=f17e134]: tester1@gmail.com
+                - generic [ref=f17e135]: User
+                - generic [ref=f17e136]: 2026-08-27
+                - generic [ref=f17e137]: Active
+                - generic [ref=f17e138]:
+                  - button "Assign Manager / Survey" [ref=f17e139]
+                  - button "Edit User" [ref=f17e144]
+                  - button "Delete User" [ref=f17e147]
+              - generic [ref=f17e151] [cursor=pointer]:
+                - generic [ref=f17e152]:
+                  - generic [ref=f17e153]: M
+                  - generic [ref=f17e154]:
+                    - generic [ref=f17e155]: Manager1
+                    - generic [ref=f17e156]: manager1@gmail.com
+                - generic [ref=f17e157]: Manager
+                - generic [ref=f17e158]: 2026-08-24
+                - generic [ref=f17e159]: Active
+                - generic [ref=f17e160]:
+                  - button "Assign Manager / Survey" [ref=f17e161]
+                  - button "Edit User" [ref=f17e166]
+                  - button "Delete User" [ref=f17e169]
+              - generic [ref=f17e173] [cursor=pointer]:
+                - generic [ref=f17e174]:
+                  - generic [ref=f17e175]: U
+                  - generic [ref=f17e176]:
+                    - generic [ref=f17e177]: User1
+                    - generic [ref=f17e178]: user1@gmail.com
+                - generic [ref=f17e179]: User
+                - generic [ref=f17e180]: 2026-08-20
+                - generic [ref=f17e181]: Active
+                - generic [ref=f17e182]:
+                  - button "Assign Manager / Survey" [ref=f17e183]
+                  - button "Edit User" [ref=f17e188]
+                  - button "Delete User" [ref=f17e191]
+        - generic [ref=f17e196]:
+          - generic [ref=f17e197]:
+            - heading "Create Credential User" [level=3] [ref=f17e198]
+            - button [ref=f17e199] [cursor=pointer]
+          - generic [ref=f17e203]:
+            - generic [ref=f17e204]:
+              - generic [ref=f17e205]: FULL NAME *
+              - textbox "Jordan Patel" [ref=f17e206]
+            - generic [ref=f17e207]:
+              - generic [ref=f17e208]: EMAIL ADDRESS *
+              - textbox "user@domain.com" [ref=f17e209]
+            - generic [ref=f17e210]:
+              - generic [ref=f17e211]: PASSWORD *
+              - generic [ref=f17e212]:
+                - textbox "Min. 8 characters" [ref=f17e213]
+                - button [ref=f17e214] [cursor=pointer]
+            - generic [ref=f17e218]:
+              - generic [ref=f17e219]: SELECT ROLE *
+              - combobox [ref=f17e220]:
+                - option "User" [selected]
+                - option "Manager"
+                - option "Admin"
+            - generic [ref=f17e221]:
+              - generic [ref=f17e222]: SURVEY FIELD
+              - combobox [ref=f17e223]:
+                - option "Select field..." [selected]
+                - option "rate (AI)"
+                - option "prison-1 (Copy) (prison)"
+                - option "prison-1 (prison)"
+            - generic [ref=f17e224]:
+              - button "Cancel" [ref=f17e225] [cursor=pointer]
+              - button "Create User" [ref=f17e226] [cursor=pointer]

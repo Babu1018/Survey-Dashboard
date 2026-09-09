@@ -1,80 +1,108 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Skeleton } from 'boneyard-js/react';
 import useSurveyStore from '../store/useSurveyStore';
+import useMonitorStore from '../store/useMonitorStore';
 import {
   Plus,
-  Search,
-  ChevronRight,
-  Hash,
-  LayoutList,
-  ArrowUpRight,
-  Pencil,
-  X,
-  Clock,
-  Copy,
-  Wrench,
-  Layers,
-  Trash2
+  Trash2,
+  Eye,
+  Users,
+  FolderKanban,
+  ClipboardList,
+  CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useNotificationStore from '../store/useNotificationStore';
+import { getBranches, getBranchSwatch } from '../utils/branchPalette';
+
+const formatDate = (value) => {
+  if (!value) return '—';
+  return new Date(value).toISOString().slice(0, 10);
+};
+
+const ROW_ODD_BG = 'var(--bg-card)';
+const ROW_EVEN_BG = 'var(--bg-main)';
+
+const iconButtonStyle = (color) => ({
+  background: `${color}1a`,
+  border: 'none',
+  color,
+  width: '30px',
+  height: '30px',
+  padding: 0,
+  borderRadius: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  transition: 'background 0.15s'
+});
 
 const SurveyList = () => {
-  const { surveys, fetchSurveys, loading, deleteSurvey, cloneSurvey, cleanupMedia, deleteSurveysByCategory } = useSurveyStore();
+  const { surveys, users, fetchSurveys, fetchUsers, loading, deleteSurveysByCategory } = useSurveyStore();
+  const { recentResponses, fetchRecent } = useMonitorStore();
   const navigate = useNavigate();
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-  const [selectedBatch, setSelectedBatch] = useState(null);
   const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState(null);
 
   useEffect(() => {
     fetchSurveys();
+    fetchUsers();
+    fetchRecent(1000);
   }, []);
 
-  const baseBatches = ['AI', 'Developer', 'DevOps'];
-  const dynamicBatches = surveys ? [...new Set(surveys.map(s => s.category).filter(Boolean))] : [];
-  const batches = [...new Set([...baseBatches, ...dynamicBatches])].filter(batch => {
-    return surveys.some(s => s.category === batch);
-  });
+  const batches = getBranches(surveys);
 
+  const activeSurveys = surveys.filter(s => s.is_active).length;
 
-  const filteredSurveys = selectedBatch ? surveys.filter(s => s.category === selectedBatch) : [];
+  const roleCounts = useMemo(() => {
+    const count = role => users.filter(u => u.role === role).length;
+    return { admins: count('Admin'), managers: count('Manager'), members: count('User') };
+  }, [users]);
+
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+  const stats = [
+    {
+      label: 'Total Credential Users',
+      value: users.length,
+      sub: [
+        roleCounts.admins ? plural(roleCounts.admins, 'Admin') : null,
+        plural(roleCounts.managers, 'Manager'),
+        plural(roleCounts.members, 'User'),
+      ].filter(Boolean).join(' · '),
+      icon: <Users size={20} />,
+      color: 'var(--accent-primary)'
+    },
+    { label: 'Total Survey Branches', value: batches.length, icon: <FolderKanban size={20} />, color: '#0891b2' },
+    { label: 'Surveys In Progress', value: activeSurveys, icon: <ClipboardList size={20} />, color: '#f59e0b' },
+    { label: 'Total Responses', value: recentResponses.length.toLocaleString(), icon: <CheckCircle2 size={20} />, color: '#10b981' },
+  ];
+
+  const branchRows = useMemo(() => {
+    return batches.map(batch => {
+      const batchSurveys = surveys.filter(s => s.category === batch);
+      const usersInBatch = users.filter(u => (u.assigned_surveys || []).some(s => s.category === batch)).length;
+      const responsesInBatch = recentResponses.filter(r => r.category === batch).length;
+      const createdDates = batchSurveys.map(s => s.created_at).filter(Boolean).sort();
+      return {
+        name: batch,
+        users: usersInBatch,
+        surveys: batchSurveys.length,
+        responses: responsesInBatch,
+        created: createdDates[0],
+      };
+    });
+  }, [batches, surveys, users, recentResponses]);
 
   return (
     <div style={{ animation: 'fade-in 0.4s ease-out', maxWidth: '1400px', margin: '0 auto', padding: 'clamp(0.5rem, 2vw, 2rem)', paddingBottom: '5rem' }}>
       <Skeleton name="page-header" loading={loading}>
         <div className="page-header-container">
           <div className="page-header">
-            <h1>SurveyLists</h1>
+            <h1>Branches</h1>
+            <p>Click any branch row to drill into credential user performance.</p>
           </div>
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button
-              onClick={async () => {
-                const { showSuccess, showError } = useNotificationStore.getState();
-                if (window.confirm("Are you sure you want to run maintenance? This will permanently delete orphaned media files.")) {
-                  try {
-                    const res = await cleanupMedia();
-                    showSuccess(`Cleanup complete. Deleted ${res.deleted} orphaned files.`);
-                  } catch (e) {
-                    showError(e.message);
-                  }
-                }
-              }}
-              style={{
-                height: '48px',
-                padding: '0 1.5rem',
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-            >
-              <Wrench size={18} /> Cleanup Media
-            </button>
             <button className="primary" onClick={() => navigate('/builder')} style={{ height: '48px', padding: '0 1.5rem', whiteSpace: 'nowrap' }}>
               <Plus size={18} /> New Survey
             </button>
@@ -82,276 +110,140 @@ const SurveyList = () => {
         </div>
       </Skeleton>
 
-      {/* Batch Cards Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))',
-        gap: '1.5rem',
-        marginTop: '1rem'
-      }}>
-        {batches.map(batch => {
-          const count = surveys.filter(s => s.category === batch).length;
-          return (
-            <Skeleton key={batch} name={`batch-${batch.toLowerCase()}`} loading={loading}>
-              <div
-                className="panel"
-                onClick={() => setSelectedBatch(batch)}
-                style={{
-                  background: 'var(--bg-main)',
-                  padding: '1.5rem',
-                  borderLeft: '4px solid var(--accent-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  textAlign: 'left',
-                  width: '100%',
-                  position: 'relative'
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    background: 'rgba(var(--accent-primary-rgb), 0.1)',
-                    color: 'var(--accent-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '10px'
-                  }}>
-                    <Layers size={20} />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{batch}</h2>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Surveys Category</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    background: 'var(--accent-primary)',
-                    color: 'white',
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: 800
-                  }}>
-                    {count}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteCategoryConfirm(batch);
-                    }}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: 'none',
-                      color: '#ef4444',
-                      padding: '6px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </Skeleton>
-          );
-        })}
-      </div>
-
-      {/* Floating Card (Modal) for Selected Batch */}
-      {selectedBatch && (
+      {/* Stat Cards */}
+      <Skeleton name="survey-fields-stats" loading={loading}>
         <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '2rem'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 'clamp(0.75rem, 1.5vw, 1.5rem)',
+          marginBottom: 'clamp(1.5rem, 2vw, 2rem)'
         }}>
-          <div className="panel modal-scroll" style={{
-            background: 'var(--bg-main)',
-            width: '100%',
-            maxWidth: '700px',
-            maxHeight: '85vh',
-            overflowY: 'auto',
-            borderRadius: '24px',
-            boxShadow: '0 30px 60px rgba(0,0,0,0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative'
-          }}>
-            {/* Modal Header */}
-            <div style={{
-              padding: '1.5rem 2rem',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              position: 'sticky',
-              top: 0,
-              background: 'var(--bg-main)',
-              zIndex: 20
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>{selectedBatch}</h2>
-                <span style={{
-                  background: 'var(--accent-primary)',
-                  color: 'white',
-                  padding: '2px 8px',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: 800
-                }}>
-                  {filteredSurveys.length} Surveys
-                </span>
+          {stats.map((stat, i) => (
+            <div key={i} className="panel" style={{ padding: '1.5rem', borderTop: `3px solid ${stat.color}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <h4 style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{stat.label}</h4>
+                <div style={{ color: stat.color, background: `${stat.color}15`, padding: '8px', borderRadius: '8px', flexShrink: 0 }}>{stat.icon}</div>
               </div>
-              <button
-                onClick={() => setSelectedBatch(null)}
-                style={{
-                  background: 'var(--bg-hover)',
-                  border: 'none',
-                  padding: '8px',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                  display: 'flex'
-                }}
-              >
-                <X size={20} />
-              </button>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>{stat.value}</div>
+              {stat.sub && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{stat.sub}</div>
+              )}
             </div>
+          ))}
+        </div>
+      </Skeleton>
 
-            {/* Modal Content */}
-            <div style={{ padding: '1.5rem 2rem 2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {filteredSurveys.map(survey => (
-                <div key={survey.id} className="panel" style={{
-                  background: 'var(--bg-sidebar)',
-                  padding: '1rem 1.25rem',
-                  border: '1px solid var(--border)',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer',
-                  position: 'relative'
-                }}
-                  onClick={() => navigate(`/builder/${survey.id}`)}>
+      {/* Performance Table */}
+      <Skeleton name="survey-fields-performance" loading={loading}>
+        <div className="panel" style={{ padding: 0 }}>
+          <div style={{
+            padding: '1.25rem 1.5rem',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <h3 style={{ fontSize: '1.05rem', margin: 0 }}>Performance</h3>
+          </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flexGrow: 1, minWidth: 0 }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {survey.title}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '0.75rem' }}>
-                        <div style={{ color: 'var(--accent-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Pencil size={12} /> Edit
-                        </div>
-                        <div
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const { showSuccess, showError } = useNotificationStore.getState();
-                            if (window.confirm('Clone this survey?')) {
-                              try {
-                                await cloneSurvey(survey.id);
-                                showSuccess('Survey Cloned Successfully');
-                              } catch {
-                                showError('Failed to clone survey');
-                              }
-                            }
-                          }}
-                          style={{ color: 'var(--accent-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <Copy size={12} /> Clone
-                        </div>
-                        <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={12} /> {new Date(survey.updated_at).toLocaleDateString()}
-                        </div>
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ minWidth: '820px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '2.2fr 1fr 1fr 1fr 1fr 1fr',
+                padding: '0.85rem 1.5rem',
+                background: 'var(--bg-main)',
+                borderBottom: '1px solid var(--border)',
+                color: 'var(--text-muted)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em'
+              }}>
+                <span>Branch Name</span>
+                <span>Users</span>
+                <span>Surveys</span>
+                <span>Responses</span>
+                <span>Created on</span>
+                <span>Actions</span>
+              </div>
+
+              {branchRows.map((row, i) => {
+                const swatch = getBranchSwatch(row.name, batches);
+                const rowBg = i % 2 === 0 ? ROW_ODD_BG : ROW_EVEN_BG;
+                return (
+                  <div
+                    key={row.name}
+                    onClick={() => navigate(`/surveys/branch/${encodeURIComponent(row.name)}`)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2.2fr 1fr 1fr 1fr 1fr 1fr',
+                      padding: '0.9rem 1.5rem',
+                      borderBottom: '1px solid var(--border)',
+                      fontSize: '0.9rem',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      background: rowBg,
+                      transition: 'background 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = rowBg}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: swatch.color,
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        {swatch.icon}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Survey Category</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span>{row.users}</span>
+                    <span>{row.surveys}</span>
+                    <span>{row.responses}</span>
+                    <span>{formatDate(row.created)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(survey.id); }}
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: 'none',
-                          color: '#ef4444',
-                          padding: '6px',
-                          borderRadius: '6px',
-                          cursor: 'pointer'
-                        }}
+                        title={`View ${row.name}`}
+                        aria-label={`View ${row.name}`}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/surveys/branch/${encodeURIComponent(row.name)}`); }}
+                        style={iconButtonStyle('#3b82f6')}
                       >
-                        <X size={16} />
+                        <Eye size={15} />
                       </button>
-                      <ArrowUpRight size={18} color="var(--text-muted)" />
+                      <button
+                        title={`Delete ${row.name}`}
+                        aria-label={`Delete ${row.name}`}
+                        onClick={(e) => { e.stopPropagation(); setDeleteCategoryConfirm(row.name); }}
+                        style={iconButtonStyle('#ef4444')}
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {filteredSurveys.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: '16px' }}>
-                  No surveys in this category.
+              {branchRows.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  No survey branches yet. Create a survey to get started.
                 </div>
               )}
             </div>
           </div>
         </div>
-      )}
+      </Skeleton>
 
-      {deleteConfirmId && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1100
-        }}>
-          <div className="panel" style={{
-            background: 'var(--bg-main)',
-            padding: '2rem',
-            borderRadius: '16px',
-            maxWidth: '400px',
-            width: '90%'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Delete Survey</h3>
-            <p style={{ color: 'var(--text-muted)', margin: '1rem 0 2rem' }}>Are you sure you want to delete this survey?</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button onClick={() => setDeleteConfirmId(null)} style={{ background: 'none', border: '1px solid var(--border)' }}>Cancel</button>
-              <button
-                onClick={async () => {
-                  const { showSuccess, showError } = useNotificationStore.getState();
-                  try {
-                    await deleteSurvey(deleteConfirmId);
-                    showSuccess('Survey Deleted');
-                    setDeleteConfirmId(null);
-                  } catch {
-                    showError('Failed to delete survey');
-                  }
-                }}
-                style={{ background: '#ef4444', color: 'white', border: 'none' }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {deleteCategoryConfirm && (
         <div style={{
           position: 'fixed',

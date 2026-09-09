@@ -1,6 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import useMonitorStore from '../store/useMonitorStore';
 import useNotificationStore from '../store/useNotificationStore';
+import useAuthStore from '../store/useAuthStore';
+import { getStatusBadgeColors } from '../utils/statusBadge';
+import AnswerDisplay from '../components/common/AnswerDisplay';
 import { 
   Activity, 
   AlertCircle, 
@@ -85,11 +89,13 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
   const { fetchResponseDetail } = useMonitorStore();
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
     const loadDetail = async () => {
       const data = await fetchResponseDetail(responseId);
       setDetail(data);
+      setComment(data?.manager_comment || '');
       setLoading(false);
     };
     loadDetail();
@@ -149,7 +155,7 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
             {/* Status Dropdown */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>STATUS:</span>
-              <select 
+              <select
                 value={detail.status}
                 onChange={async (e) => {
                   const { showSuccess, showError } = useNotificationStore.getState();
@@ -161,14 +167,14 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
                     showError('Failed to update status.');
                   }
                 }}
-                style={{ 
-                  padding: '6px 12px', 
-                  borderRadius: '10px', 
-                  fontSize: '0.8rem', 
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
                   fontWeight: 700,
-                  background: detail.status === 'Resolved' ? '#10b981' : (detail.status === 'Intervention Triggered' ? '#f97316' : 'var(--bg-card)'),
-                  color: (detail.status === 'Resolved' || detail.status === 'Intervention Triggered') ? 'white' : 'var(--text-main)',
-                  border: '1px solid var(--border)',
+                  background: getStatusBadgeColors(detail.status).bg,
+                  color: getStatusBadgeColors(detail.status).fg,
+                  border: `1px solid ${getStatusBadgeColors(detail.status).border}`,
                   cursor: 'pointer'
                 }}
               >
@@ -177,6 +183,44 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
                 <option value="Intervention Triggered">Intervention Triggered</option>
                 <option value="Resolved">Resolved</option>
               </select>
+            </div>
+
+            {/* Approve / Reject */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={async () => {
+                  const { showSuccess, showError } = useNotificationStore.getState();
+                  try {
+                    const updated = await useMonitorStore.getState().updateResponseStatus(detail.id, 'Approved', comment.trim() || null);
+                    setDetail(prev => ({ ...prev, ...updated }));
+                    showSuccess('Submission approved.');
+                  } catch {
+                    showError('Failed to approve.');
+                  }
+                }}
+                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              >
+                <Check size={16} /> Approve
+              </button>
+              <button
+                onClick={async () => {
+                  const { showSuccess, showError } = useNotificationStore.getState();
+                  if (!comment.trim()) {
+                    showError('A comment is required when rejecting a submission.');
+                    return;
+                  }
+                  try {
+                    const updated = await useMonitorStore.getState().updateResponseStatus(detail.id, 'Rejected', comment.trim());
+                    setDetail(prev => ({ ...prev, ...updated }));
+                    showSuccess('Submission rejected.');
+                  } catch {
+                    showError('Failed to reject.');
+                  }
+                }}
+                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              >
+                <X size={16} /> Reject
+              </button>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -212,6 +256,33 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
             }}><X size={20} /></button>
           </div>
         </div>
+      </div>
+
+      {/* ── Manager Review ── */}
+      <div style={{ padding: '2rem 2rem 0' }}>
+        {detail.reviewed_by_username && (
+          <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            Last reviewed by <strong style={{ color: 'var(--text-main)' }}>{detail.reviewed_by_username}</strong>
+            {detail.reviewed_at ? ` on ${new Date(detail.reviewed_at).toLocaleString()}` : ''}
+          </p>
+        )}
+        <textarea
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder="Add a comment for the respondent (required when rejecting)…"
+          rows={2}
+          style={{
+            width: '100%',
+            resize: 'vertical',
+            padding: '0.75rem 1rem',
+            borderRadius: '12px',
+            border: '1px solid var(--border)',
+            background: 'var(--bg-main)',
+            color: 'var(--text-main)',
+            fontSize: '0.85rem',
+            fontFamily: 'inherit'
+          }}
+        />
       </div>
 
       {/* ── Score Summary Card ── */}
@@ -310,7 +381,7 @@ const ResponseDetailModal = ({ responseId, onClose, onDelete }) => {
                     {ans.score > 0 && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>Score: {ans.score}</span>}
                   </div>
                   <div style={{ color: ans.is_red_flag ? '#ef4444' : 'var(--text-main)', fontWeight: 700, fontSize: '1rem', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {ans.answer_text || <span style={{ fontStyle: 'italic', opacity: .5 }}>No answer provided</span>}
+                    <AnswerDisplay answer={ans} />
                   </div>
                 </div>
               </div>
@@ -352,13 +423,28 @@ const passesTimeFilter = (timestamp, filter) => {
 const LiveMonitor = () => {
   const { recentResponses, connected, connectWebSocket, fetchRecent, deleteResponse, bulkDeleteResponses } = useMonitorStore();
   const { showSuccess, showError } = useNotificationStore();
-  
-  const [selectedResponseId, setSelectedResponseId] = useState(null);
+  const { user } = useAuthStore();
+  const isManager = user?.role === 'Manager';
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [selectedResponseId, setSelectedResponseId] = useState(() => {
+    const openId = searchParams.get('open');
+    return openId ? Number(openId) : null;
+  });
   const [search, setSearch] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const dropRef = useRef(null);
+
+  const closeModal = () => {
+    setSelectedResponseId(null);
+    if (searchParams.get('open')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('open');
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState([]);
@@ -416,7 +502,7 @@ const LiveMonitor = () => {
     if (window.confirm('Are you sure you want to delete this submission?')) {
       try {
         await deleteResponse(id);
-        setSelectedResponseId(null);
+        closeModal();
         setSelectedIds(prev => prev.filter(x => x !== id));
         showSuccess('Submission deleted.');
       } catch (err) {
@@ -448,12 +534,14 @@ const LiveMonitor = () => {
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      {/* ── Page header ── */}
+      {/* ── Page header (Manager only — Admin gets no title on this page) ── */}
       <div className="page-header-container">
-        <div className="page-header">
-          <h1>Real-time Response Monitor</h1>
-          <p>Live updates of survey submissions across all batches.</p>
-        </div>
+        {isManager && (
+          <div className="page-header">
+            <h1>Report Approvals</h1>
+            <p>Review submitted reports and approve or reject them.</p>
+          </div>
+        )}
       </div>
 
       {/* ── Search + Filter bar ── */}
@@ -705,10 +793,10 @@ const LiveMonitor = () => {
               <div style={{ display: 'flex' }}>
                 <span style={{
                   fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px',
-                  fontWeight: 700, 
-                  background: res.status === 'Resolved' ? 'rgba(16, 185, 129, 0.1)' : (res.status === 'Intervention Triggered' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(100, 116, 139, 0.1)'),
-                  color: res.status === 'Resolved' ? '#10b981' : (res.status === 'Intervention Triggered' ? '#f97316' : '#64748b'),
-                  border: `1px solid ${res.status === 'Resolved' ? 'rgba(16, 185, 129, 0.2)' : (res.status === 'Intervention Triggered' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(100, 116, 139, 0.2)')}`,
+                  fontWeight: 700,
+                  background: getStatusBadgeColors(res.status).bg,
+                  color: getStatusBadgeColors(res.status).fg,
+                  border: `1px solid ${getStatusBadgeColors(res.status).border}`,
                 }}>
                   {res.status}
                 </span>
@@ -819,7 +907,7 @@ const LiveMonitor = () => {
       {selectedResponseId && (
         <ResponseDetailModal
           responseId={selectedResponseId}
-          onClose={() => setSelectedResponseId(null)}
+          onClose={closeModal}
           onDelete={handleDeleteIndividual}
         />
       )}

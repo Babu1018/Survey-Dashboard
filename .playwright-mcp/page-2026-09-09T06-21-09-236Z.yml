@@ -1,0 +1,92 @@
+- generic [ref=f23e3]:
+  - complementary [ref=f23e4]:
+    - generic [ref=f23e6]:
+      - generic [ref=f23e7]:
+        - generic [ref=f23e8]: SF
+        - generic [ref=f23e9]: SurveyFlow
+      - button [ref=f23e10] [cursor=pointer]
+    - navigation [ref=f23e14]:
+      - link "Dashboard" [ref=f23e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f23e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f23e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f23e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f23e48]:
+    - banner [ref=f23e49]:
+      - generic [ref=f23e51]:
+        - button "Notifications" [ref=f23e53] [cursor=pointer]
+        - generic [ref=f23e59] [cursor=pointer]:
+          - generic [ref=f23e60]: AD
+          - generic [ref=f23e61]:
+            - generic [ref=f23e62]: Admin User
+            - generic [ref=f23e63]: Admin
+    - main [ref=f23e66]:
+      - generic [ref=f23e68]:
+        - generic [ref=f23e69]:
+          - generic [ref=f23e71]:
+            - button "Back" [ref=f23e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f23e76]
+          - generic [ref=f23e77]:
+            - button "Download Template" [ref=f23e79] [cursor=pointer]
+            - button "Upload Type" [ref=f23e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f23e93] [cursor=pointer]
+            - button "Save" [ref=f23e96] [cursor=pointer]
+        - generic [ref=f23e101]:
+          - generic [ref=f23e102]:
+            - generic [ref=f23e103]:
+              - generic [ref=f23e104]: SURVEY NAME *
+              - textbox "Grid Width Check" [ref=f23e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f23e106]:
+              - generic [ref=f23e107]: SURVEY BRANCH *
+              - generic [ref=f23e108]:
+                - combobox [ref=f23e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f23e111] [cursor=pointer]
+          - generic [ref=f23e115]:
+            - generic [ref=f23e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f23e117]: Checks that a five-point grid fits the card without scrolling.
+        - generic [ref=f23e132]:
+          - generic "Drag to reorder or move to another section" [ref=f23e133]
+          - generic [ref=f23e143]:
+            - generic [ref=f23e144]:
+              - generic [ref=f23e145]:
+                - generic [ref=f23e146]: "1"
+                - generic [ref=f23e147]: NEW QUESTION
+              - generic [ref=f23e148]:
+                - button "Question Options" [ref=f23e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f23e155] [cursor=pointer]
+                - button [ref=f23e159] [cursor=pointer]
+            - generic [ref=f23e163]:
+              - generic [ref=f23e164]:
+                - generic [ref=f23e165]:
+                  - generic [ref=f23e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f23e167]
+                - generic [ref=f23e168]:
+                  - generic [ref=f23e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f23e171] [cursor=pointer]
+              - generic [ref=f23e175]:
+                - generic [ref=f23e176]: ANSWER TYPE *
+                - combobox [ref=f23e177]:
+                  - option "Short Text Answer" [selected]
+                  - option "Paragraph Answer"
+                  - option "Number Input"
+                  - option "Phone Number (10 digits)"
+                  - option "Single Choice (Radio Buttons)"
+                  - option "Multiple Choice (Checkboxes)"
+                  - option "Rating Scale"
+                  - option "Ranking (Drag to Order)"
+                  - option "Matrix / Grid"
+                  - option "Media Upload"
+        - generic [ref=f23e178]:
+          - generic [ref=f23e179]:
+            - button "Add Section" [ref=f23e180] [cursor=pointer]
+            - button "Add Question" [ref=f23e182] [cursor=pointer]
+          - button "Save" [ref=f23e184] [cursor=pointer]

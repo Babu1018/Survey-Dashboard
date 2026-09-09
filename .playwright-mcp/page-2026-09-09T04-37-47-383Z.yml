@@ -1,0 +1,47 @@
+- generic [ref=f12e40]:
+  - complementary [ref=f12e41]:
+    - generic [ref=f12e43]:
+      - generic [ref=f12e44]:
+        - generic [ref=f12e45]: SF
+        - generic [ref=f12e46]: SurveyFlow
+      - button [ref=f12e47] [cursor=pointer]
+    - navigation [ref=f12e51]:
+      - link "My Survey" [ref=f12e52] [cursor=pointer]:
+        - /url: /
+  - generic [ref=f12e57]:
+    - banner [ref=f12e58]:
+      - generic [ref=f12e60]:
+        - button "2" [ref=f12e62] [cursor=pointer]
+        - generic [ref=f12e69] [cursor=pointer]:
+          - generic [ref=f12e70]: U
+          - generic [ref=f12e71]:
+            - generic [ref=f12e72]: user1
+            - generic [ref=f12e73]: User
+    - main [ref=f12e76]:
+      - generic [ref=f12e78]:
+        - generic [ref=f12e79]:
+          - heading "Welcome, user1" [level=1] [ref=f12e80]
+          - paragraph [ref=f12e81]: Your assigned survey and submission history.
+        - generic [ref=f12e82]:
+          - generic [ref=f12e83]:
+            - generic [ref=f12e84]: Assigned Survey
+            - generic [ref=f12e90]: "1"
+            - generic [ref=f12e91]: 1 branch active
+          - generic [ref=f12e92]:
+            - generic [ref=f12e93]: Approved Survey
+            - generic [ref=f12e99]: "0"
+            - generic [ref=f12e100]: 0% of total
+          - generic [ref=f12e101]:
+            - generic [ref=f12e102]: Surveys In Progress
+            - generic [ref=f12e110]: "0"
+            - generic [ref=f12e111]: 0 awaiting review
+        - generic [ref=f12e120] [cursor=pointer]:
+          - generic [ref=f12e121]:
+            - heading "rate" [level=3] [ref=f12e122]
+            - generic [ref=f12e123]: ACTIVE
+          - generic [ref=f12e124]: Created 9/8/2026
+        - generic [ref=f12e130]:
+          - generic [ref=f12e131]:
+            - heading "Submission History" [level=2] [ref=f12e132]
+            - generic [ref=f12e133]: 0 submissions
+          - generic [ref=f12e134]: You haven't submitted any surveys yet.

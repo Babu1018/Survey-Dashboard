@@ -1,0 +1,113 @@
+- generic [ref=f21e3]:
+  - complementary [ref=f21e4]:
+    - generic [ref=f21e6]:
+      - generic [ref=f21e7]:
+        - generic [ref=f21e8]: SF
+        - generic [ref=f21e9]: SurveyFlow
+      - button [ref=f21e10] [cursor=pointer]
+    - navigation [ref=f21e14]:
+      - link "Dashboard" [ref=f21e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f21e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f21e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f21e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f21e48]:
+    - banner [ref=f21e49]:
+      - generic [ref=f21e51]:
+        - button "Notifications" [ref=f21e53] [cursor=pointer]
+        - generic [ref=f21e59] [cursor=pointer]:
+          - generic [ref=f21e60]: AD
+          - generic [ref=f21e61]:
+            - generic [ref=f21e62]: Admin User
+            - generic [ref=f21e63]: Admin
+    - main [ref=f21e66]:
+      - generic [ref=f21e68]:
+        - generic [ref=f21e69]:
+          - generic [ref=f21e71]:
+            - button "Back" [ref=f21e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f21e76]
+          - generic [ref=f21e77]:
+            - button "Download Template" [ref=f21e79] [cursor=pointer]
+            - button "Upload Type" [ref=f21e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f21e93] [cursor=pointer]
+            - button "Save" [ref=f21e96] [cursor=pointer]
+        - generic [ref=f21e101]:
+          - generic [ref=f21e102]:
+            - generic [ref=f21e103]:
+              - generic [ref=f21e104]: SURVEY NAME *
+              - textbox "Rating Styles Check" [ref=f21e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f21e106]:
+              - generic [ref=f21e107]: SURVEY BRANCH *
+              - generic [ref=f21e108]:
+                - combobox [ref=f21e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f21e111] [cursor=pointer]
+          - generic [ref=f21e115]:
+            - generic [ref=f21e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f21e117]: Verifies how each rating style is presented to the respondent.
+        - generic [ref=f21e132]:
+          - generic "Drag to reorder or move to another section" [ref=f21e133]
+          - generic [ref=f21e143]:
+            - generic [ref=f21e144]:
+              - generic [ref=f21e145]:
+                - generic [ref=f21e146]: "1"
+                - generic [ref=f21e147]: NEW QUESTION
+              - generic [ref=f21e148]:
+                - button "Question Options" [ref=f21e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f21e155] [cursor=pointer]
+                - button [ref=f21e159] [cursor=pointer]
+            - generic [ref=f21e163]:
+              - generic [ref=f21e164]:
+                - generic [ref=f21e165]:
+                  - generic [ref=f21e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f21e167]: Tell us how you find our service quality
+                - generic [ref=f21e168]:
+                  - generic [ref=f21e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f21e171] [cursor=pointer]
+              - generic [ref=f21e173]:
+                - generic [ref=f21e175]:
+                  - generic [ref=f21e176]: ANSWER TYPE *
+                  - combobox [ref=f21e177]:
+                    - option "Short Text Answer"
+                    - option "Paragraph Answer"
+                    - option "Number Input"
+                    - option "Phone Number (10 digits)"
+                    - option "Single Choice (Radio Buttons)"
+                    - option "Multiple Choice (Checkboxes)"
+                    - option "Rating Scale" [selected]
+                    - option "Ranking (Drag to Order)"
+                    - option "Matrix / Grid"
+                    - option "Media Upload"
+                - generic [ref=f21e190]:
+                  - generic [ref=f21e191]: RATING SETTINGS
+                  - generic [ref=f21e192]:
+                    - generic [ref=f21e193]:
+                      - text: Rating Style
+                      - combobox [ref=f21e194]:
+                        - option "Number Scale"
+                        - option "Star Rating" [selected]
+                        - option "Emoji Rating"
+                        - option "Horizontal Bar"
+                        - option "Word Scale"
+                    - generic [ref=f21e195]:
+                      - text: Max (e.g. 10)
+                      - spinbutton [ref=f21e196]: "5"
+                    - generic [ref=f21e197]:
+                      - text: Low Label (Optional)
+                      - textbox "e.g. Disagree" [ref=f21e198]
+                    - generic [ref=f21e199]:
+                      - text: High Label (Optional)
+                      - textbox "e.g. Agree" [ref=f21e200]
+        - generic [ref=f21e178]:
+          - generic [ref=f21e179]:
+            - button "Add Section" [ref=f21e180] [cursor=pointer]
+            - button "Add Question" [ref=f21e182] [cursor=pointer]
+          - button "Save" [ref=f21e184] [cursor=pointer]

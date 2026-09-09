@@ -1,0 +1,28 @@
+- generic [ref=f13e3]:
+  - complementary [ref=f13e4]:
+    - generic [ref=f13e6]:
+      - generic [ref=f13e7]:
+        - generic [ref=f13e8]: SF
+        - generic [ref=f13e9]: SurveyFlow
+      - button [ref=f13e10] [cursor=pointer]
+    - navigation [ref=f13e14]:
+      - link "My Survey" [ref=f13e15] [cursor=pointer]:
+        - /url: /
+  - generic [ref=f13e20]:
+    - banner [ref=f13e21]:
+      - generic [ref=f13e23]:
+        - button "Notifications" [ref=f13e25] [cursor=pointer]
+        - generic [ref=f13e31] [cursor=pointer]:
+          - generic [ref=f13e32]: U
+          - generic [ref=f13e33]:
+            - generic [ref=f13e34]: user1
+            - generic [ref=f13e35]: User
+    - main [ref=f13e38]:
+      - generic [ref=f13e40]:
+        - generic [ref=f13e41]:
+          - heading "My Surveys" [level=2] [ref=f13e42]
+          - paragraph [ref=f13e43]: Select an assigned survey to begin your entry.
+        - button "AI rate" [ref=f13e45] [cursor=pointer]:
+          - generic [ref=f13e51]:
+            - generic [ref=f13e52]: AI
+            - generic [ref=f13e53]: rate

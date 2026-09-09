@@ -1,19 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSurveyStore from '../store/useSurveyStore';
 import useAuthStore from '../store/useAuthStore';
 import { 
   Plus,
   Eye, 
-  Save, 
-  Trash2, 
-  Video, 
-  Mic, 
+  Save,
+  Trash2,
+  Mic,
   ClipboardList,
+  Play,
   X,
   Upload,
   Loader2,
-  Link as LinkIcon,
   Image as ImageIcon,
   Edit3,
   ListOrdered,
@@ -23,441 +22,436 @@ import {
   Sparkles,
   UserCheck,
   FileDown,
-  ChevronDown
+  ChevronDown,
+  GitBranch,
+  GripVertical,
+  MoreVertical,
+  ArrowLeft
 } from 'lucide-react';
 import React from 'react';
 import useNotificationStore from '../store/useNotificationStore';
 import * as XLSX from 'xlsx';
-import ExcelJS from 'exceljs';
 import { INDIC_LANGUAGES, translateSurvey } from '../utils/translater';
+import { parseExcelSheet, downloadExcelTemplate, downloadManualExcelTemplate } from '../utils/excelTemplate';
+import { computeQuestionLabels } from '../utils/questionLabels';
+import { parseParentRef, formatParentRef, parseScoreRules } from '../utils/surveyRouting';
+import { parseMediaItems, stringifyMediaItems } from '../utils/mediaItems';
+import { validateSurvey, draftToDbShape } from '../utils/surveyValidation';
+import ValidationReportModal from '../components/common/ValidationReportModal';
+import SurveyForm from './SurveyForm';
+import * as surveyService from '../services/surveyService';
+import {
+  parseLabelList, serializeLabelList,
+  RATING_STYLES, WORD_SCALE_PRESETS, FILE_TYPE_FAMILIES,
+} from '../utils/questionTypes';
 
-const API = 'http://localhost:8000';
+// ─── Question card spacing / sizing scale ────────────────────────────
+// The card is built from these so vertical rhythm and control heights stay
+// consistent instead of drifting field by field.
+const SECTION_GAP = '0.875rem';  // between major sections (question / answer / options)
+const ROW_GAP = '0.75rem';       // between rows inside one section
+const CTRL_H = '36px';           // primary control height
+const CTRL_H_SM = '32px';        // dense control height, inside option cards
+const RADIUS = '8px';
 
-const parseExcelSheet = (sheet) => {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-  if (!rows || rows.length === 0) return null;
-  
-  let parsedTitle = '';
-  let parsedDescription = '';
-  let parsedCategory = '';
-  let headerRowIndex = -1;
-
-  for (let r = 0; r < Math.min(rows.length, 10); r++) {
-    const row = rows[r];
-    if (!row || row.length === 0) continue;
-    
-    const key = String(row[0]).trim().toLowerCase();
-    if (key === 'survey name' || key === 'title' || key === 'survey title') {
-      parsedTitle = row[1] ? String(row[1]).trim() : '';
-    } else if (key === 'survey description' || key === 'description' || key === 'survey description') {
-      parsedDescription = row[1] ? String(row[1]).trim() : '';
-    } else if (key === 'category') {
-      parsedCategory = row[1] ? String(row[1]).trim() : '';
-    } else if (row.includes('Question Text') || row.includes('Question Text*') || row.some(cell => String(cell).includes('Question Text'))) {
-      headerRowIndex = r;
-      break;
-    }
-  }
-
-  if (headerRowIndex === -1) {
-    return null;
-  }
-
-  const parsedQuestions = [];
-  const headerRow = rows[headerRowIndex];
-  
-  const colMap = {};
-  headerRow.forEach((cell, idx) => {
-    if (!cell) return;
-    const normalized = String(cell).trim().toLowerCase();
-    if (normalized.includes("question text")) colMap.questionText = idx;
-    else if (normalized.includes("question type") || normalized.includes("answer type")) colMap.questionType = idx;
-    else if (normalized.includes("required")) colMap.required = idx;
-    else if (normalized.includes("options")) colMap.options = idx;
-    else if (normalized.includes("scores")) colMap.optionScores = idx;
-    else if (normalized.includes("red flags")) colMap.optionRedFlags = idx;
-    else if (normalized.includes("option jumps") || normalized.includes("next_question")) colMap.optionJumps = idx;
-    else if (normalized.includes("scale")) colMap.scale = idx;
-    else if (normalized.includes("score threshold")) colMap.scoreThreshold = idx;
-    else if (normalized.includes("threshold jump")) colMap.thresholdJump = idx;
-    else if (normalized.includes("rating max")) colMap.ratingMax = idx;
-    else if (normalized.includes("low label")) colMap.lowLabel = idx;
-    else if (normalized.includes("high label")) colMap.highLabel = idx;
-  });
-
-  if (colMap.questionText === undefined) {
-    return null;
-  }
-
-  for (let r = headerRowIndex + 1; r < rows.length; r++) {
-    const row = rows[r];
-    if (!row || row.length === 0) continue;
-    
-    const questionText = colMap.questionText !== undefined ? row[colMap.questionText] : null;
-    if (!questionText || String(questionText).trim() === '') continue;
-
-    let questionType = colMap.questionType !== undefined && row[colMap.questionType]
-      ? String(row[colMap.questionType]).trim().toLowerCase()
-      : 'text';
-
-    if (questionType === 'short') {
-      questionType = 'text';
-    } else if (questionType === 'paragraph') {
-      questionType = 'long_text';
-    } else if (questionType === 'single choose' || questionType === 'radio') {
-      questionType = 'radio';
-    } else if (questionType === 'multi choose' || questionType === 'check box' || questionType === 'checkbox') {
-      questionType = 'checkbox';
-    } else if (questionType === 'score') {
-      questionType = 'select';
-    }
-      
-    const requiredStr = colMap.required !== undefined && row[colMap.required]
-      ? String(row[colMap.required]).trim().toLowerCase()
-      : 'yes';
-    const required = requiredStr === 'yes' || requiredStr === 'y' || requiredStr === 'true' || requiredStr === '1';
-
-    const optionsStr = colMap.options !== undefined && row[colMap.options] ? String(row[colMap.options]).trim() : '';
-    const scoresStr = colMap.optionScores !== undefined && row[colMap.optionScores] ? String(row[colMap.optionScores]).trim() : '';
-    const redFlagsStr = colMap.optionRedFlags !== undefined && row[colMap.optionRedFlags] ? String(row[colMap.optionRedFlags]).trim() : '';
-    const jumpsStr = colMap.optionJumps !== undefined && row[colMap.optionJumps] ? String(row[colMap.optionJumps]).trim() : '';
-
-    const optionsArray = optionsStr ? optionsStr.split(';').map(o => o.trim()) : [];
-    const scoresArray = scoresStr ? scoresStr.split(';').map(s => parseInt(s.trim(), 10) || 0) : [];
-    const redFlagsArray = redFlagsStr ? redFlagsStr.split(';').map(rf => {
-      const s = rf.trim().toLowerCase();
-      return s === 'yes' || s === 'y' || s === 'true' || s === '1';
-    }) : [];
-    const jumpsArray = jumpsStr ? jumpsStr.split(';').map(j => j.trim()) : [];
-
-    const options = optionsArray.map((optText, oIdx) => {
-      let jumpVal = null;
-      const rawJump = jumpsArray[oIdx];
-      if (rawJump) {
-        const normalizedJump = rawJump.toLowerCase();
-        if (normalizedJump === 'end' || normalizedJump === '-1' || normalizedJump === 'submit') {
-          jumpVal = -1;
-        } else if (normalizedJump === 'next') {
-          jumpVal = null;
-        } else {
-          const parsedNum = parseInt(rawJump, 10);
-          if (!isNaN(parsedNum)) {
-            jumpVal = parsedNum;
-          }
-        }
-      }
-
-      return {
-        option_text: optText,
-        next_question: jumpVal,
-        score: scoresArray[oIdx] !== undefined ? scoresArray[oIdx] : 0,
-        is_red_flag: redFlagsArray[oIdx] !== undefined ? redFlagsArray[oIdx] : false,
-        media_url: ''
-      };
-    });
-
-    const scale = colMap.scale !== undefined && row[colMap.scale] ? String(row[colMap.scale]).trim() : '';
-    const scoreThreshold = colMap.scoreThreshold !== undefined && row[colMap.scoreThreshold] !== undefined
-      ? parseInt(row[colMap.scoreThreshold], 10)
-      : null;
-
-    let thresholdNextQuestion = null;
-    if (colMap.thresholdJump !== undefined && row[colMap.thresholdJump]) {
-      const rawTJump = String(row[colMap.thresholdJump]).trim().toLowerCase();
-      if (rawTJump === 'end' || rawTJump === '-1' || rawTJump === 'submit') {
-        thresholdNextQuestion = -1;
-      } else {
-        const parsedNum = parseInt(rawTJump, 10);
-        if (!isNaN(parsedNum)) {
-          thresholdNextQuestion = parsedNum;
-        }
-      }
-    }
-
-    const ratingMax = colMap.ratingMax !== undefined && row[colMap.ratingMax] !== undefined
-      ? parseInt(row[colMap.ratingMax], 10) || 5
-      : 5;
-    const lowLabel = colMap.lowLabel !== undefined && row[colMap.lowLabel] ? String(row[colMap.lowLabel]).trim() : '';
-    const highLabel = colMap.highLabel !== undefined && row[colMap.highLabel] ? String(row[colMap.highLabel]).trim() : '';
-
-    parsedQuestions.push({
-      id: `temp-${Date.now()}-${Math.random()}`,
-      question_text: String(questionText).trim(),
-      question_type: questionType,
-      media_type: 'none',
-      media_url: '',
-      required,
-      options,
-      rating_max: ratingMax,
-      low_label: lowLabel,
-      high_label: highLabel,
-      scale,
-      score_threshold: isNaN(scoreThreshold) ? null : scoreThreshold,
-      threshold_next_question: thresholdNextQuestion
-    });
-  }
-
-  parsedQuestions.forEach(q => {
-    q.options.forEach(opt => {
-      if (opt.next_question !== null && opt.next_question !== undefined) {
-        if (opt.next_question === -1) {
-          opt.next_question = -1;
-        } else {
-          const targetQuestionNum = opt.next_question;
-          if (targetQuestionNum >= 1 && targetQuestionNum <= parsedQuestions.length) {
-            opt.next_question = targetQuestionNum - 1;
-          } else {
-            opt.next_question = null;
-          }
-        }
-      }
-    });
-
-    if (q.threshold_next_question !== null && q.threshold_next_question !== undefined) {
-      if (q.threshold_next_question === -1) {
-        q.threshold_next_question = -1;
-      } else {
-        const targetQuestionNum = q.threshold_next_question;
-        if (targetQuestionNum >= 1 && targetQuestionNum <= parsedQuestions.length) {
-          q.threshold_next_question = targetQuestionNum - 1;
-        } else {
-          q.threshold_next_question = null;
-        }
-      }
-    }
-  });
-
-  return {
-    title: parsedTitle || 'Uploaded Survey',
-    description: parsedDescription || '',
-    category: parsedCategory || 'AI',
-    questions: parsedQuestions
-  };
+// One label style for every field label in the card. These previously drifted
+// between 0.75rem and 0.62rem, and 0.04em and 0.05em letter-spacing.
+const cardLabel = {
+  fontSize: '0.68rem',
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  display: 'block',
+  marginBottom: '4px',
 };
 
-const CompactMediaUpload = ({ onUpload, disabled }) => {
-  const [uploading, setUploading] = useState(false);
+const reqMark = <span style={{ color: '#ef4444' }}>*</span>;
+
+const detectMediaKind = (file) => {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('audio/')) return 'audio';
+  return null;
+};
+
+// Uploaded filenames carry a "<unix-timestamp>_" prefix (see Backend's
+// upload endpoint) so two uploads of the same filename never collide on
+// disk — strip that back off for display so the caption under each tile
+// reads as the file the user actually picked, not a stray number.
+const cleanFileName = (url) => (url.split('/').pop() || '').replace(/^\d+_/, '');
+
+const MEDIA_TILE = '38px';
+
+// Shared multi-file uploader for question- and choice-level attachments.
+// Accepts any number of images and audio clips, uploads each independently
+// (so one slow/failed file doesn't block the rest), and shows every
+// in-flight upload as its own chip until it resolves to a thumbnail/icon.
+const MultiMediaUpload = ({ items, onChange }) => {
+  const [pending, setPending] = useState([]); // { key, name, status: 'uploading' | 'error' }
+  const [isDragging, setIsDragging] = useState(false);
   const token = useAuthStore(state => state.token);
   const fileInputRef = useRef(null);
+  // Uploads within one batch resolve one at a time via `await`, each calling
+  // onChange with items appended onto whatever the parent holds *now* — a
+  // stale `items` closure would make every completion after the first
+  // clobber the ones before it instead of appending to them.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  const handleUpload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`${API}/api/surveys/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Upload failed with status ' + response.status);
-      
-      const data = await response.json();
-      
-      let type = 'none';
-      if (file.type.startsWith('image/')) type = 'image';
-      else if (file.type.startsWith('video/')) type = 'video';
-      else if (file.type.startsWith('audio/')) type = 'audio';
-      
-      onUpload(data.url, type);
-    } catch (error) {
-      console.error("Upload failed", error);
-      const { showError } = useNotificationStore.getState();
-      showError("Upload failed. Ensure backend is running.");
-    } finally {
-      setUploading(false);
+  const uploadFiles = async (fileList) => {
+    const { showError } = useNotificationStore.getState();
+    for (const file of Array.from(fileList)) {
+      const kind = detectMediaKind(file);
+      if (!kind) {
+        showError(`${file.name}: only images and audio can be attached.`);
+        continue;
+      }
+      const key = `${Date.now()}-${Math.random()}`;
+      setPending(prev => [...prev, { key, name: file.name, status: 'uploading' }]);
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const data = await surveyService.uploadMedia(token, formData);
+        onChange([...(itemsRef.current || []), { url: data.url, type: kind }]);
+      } catch (error) {
+        console.error('Upload failed', error);
+        setPending(prev => prev.map(p => p.key === key ? { ...p, status: 'error' } : p));
+        continue;
+      }
+      setPending(prev => prev.filter(p => p.key !== key));
     }
   };
 
   return (
-    <div style={{ display: 'inline-block' }}>
-      <input 
+    <div
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+      }}
+      style={{
+        display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'flex-start',
+        width: 'fit-content', maxWidth: '100%', borderRadius: RADIUS, boxSizing: 'border-box',
+        padding: '7px', transition: 'all 0.15s',
+        border: isDragging ? '1.5px dashed var(--accent-primary)' : '1px solid var(--border)',
+        background: isDragging ? 'rgba(76, 140, 228, 0.06)' : 'var(--bg-main)'
+      }}
+    >
+      {(items || []).map((item, idx) => (
+        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', width: MEDIA_TILE, flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: MEDIA_TILE, height: MEDIA_TILE }}>
+            {item.type === 'image' ? (
+              <img
+                src={item.url}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)', display: 'block' }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%', borderRadius: '8px',
+                background: 'rgba(76, 140, 228, 0.1)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Mic size={15} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => onChange(items.filter((_, i) => i !== idx))}
+              title="Remove"
+              style={{
+                position: 'absolute', top: '-5px', right: '-5px', width: '14px', height: '14px',
+                borderRadius: '50%', background: '#ef4444', color: 'white', border: '1.5px solid var(--bg-card)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
+              }}
+            >
+              <X size={8} strokeWidth={3} style={{ flexShrink: 0 }} />
+            </button>
+          </div>
+          <span
+            className="truncate"
+            title={cleanFileName(item.url)}
+            style={{ fontSize: '0.58rem', color: 'var(--text-muted)', width: '100%', textAlign: 'center' }}
+          >
+            {cleanFileName(item.url)}
+          </span>
+        </div>
+      ))}
+
+      {pending.map(p => (
+        <div key={p.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', width: MEDIA_TILE, flexShrink: 0 }}>
+          <div style={{
+            position: 'relative', width: MEDIA_TILE, height: MEDIA_TILE, borderRadius: '8px',
+            background: p.status === 'error' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-hover)',
+            border: `1px solid ${p.status === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'var(--border)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {p.status === 'error'
+              ? <X size={14} style={{ color: '#ef4444', flexShrink: 0 }} />
+              : <Loader2 className="spin" size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />}
+            {p.status === 'error' && (
+              <button
+                type="button"
+                onClick={() => setPending(prev => prev.filter(x => x.key !== p.key))}
+                title="Dismiss"
+                style={{
+                  position: 'absolute', top: '-5px', right: '-5px', width: '14px', height: '14px',
+                  borderRadius: '50%', background: '#ef4444', color: 'white', border: '1.5px solid var(--bg-card)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
+                }}
+              >
+                <X size={8} strokeWidth={3} style={{ flexShrink: 0 }} />
+              </button>
+            )}
+          </div>
+          <span className="truncate" style={{ fontSize: '0.58rem', color: p.status === 'error' ? '#ef4444' : 'var(--text-muted)', width: '100%', textAlign: 'center' }}>
+            {p.status === 'error' ? 'Failed' : 'Uploading'}
+          </span>
+        </div>
+      ))}
+
+      <input
         ref={fileInputRef}
-        type="file" 
-        style={{ display: 'none' }} 
-        disabled={disabled}
+        type="file"
+        multiple
+        accept="image/*,audio/*"
+        style={{ display: 'none' }}
         onChange={(e) => {
-          handleUpload(e.target.files[0]);
+          if (e.target.files?.length) uploadFiles(e.target.files);
           e.target.value = null;
         }}
       />
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        disabled={uploading || disabled}
+        title="Add images or audio"
         style={{
-          height: '40px',
-          padding: '0 1rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontSize: '0.85rem',
-          fontWeight: 700,
-          background: disabled ? 'var(--border)' : 'var(--accent-primary)',
-          color: disabled ? 'var(--text-muted)' : 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          whiteSpace: 'nowrap',
-          opacity: disabled ? 0.6 : 1
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: MEDIA_TILE, height: MEDIA_TILE, borderRadius: '8px', flexShrink: 0,
+          border: 'none', background: 'var(--accent-primary)',
+          color: 'var(--bg-card)', cursor: 'pointer', transition: 'opacity 0.15s'
         }}
+        onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
+        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
       >
-        {uploading ? <Loader2 className="spin" size={14} color="white" /> : <Upload size={14} />}
-        {uploading ? 'Uploading...' : 'Upload File'}
+        <Plus size={18} strokeWidth={2.5} style={{ flexShrink: 0 }} />
       </button>
     </div>
   );
 };
 
-const OptionMediaInput = ({ currentUrl, onUpdate }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const token = useAuthStore(state => state.token);
-  const fileInputRef = useRef(null);
-
-  const handleUpload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`${API}/api/surveys/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Upload failed');
-      const data = await response.json();
-      onUpdate(data.url);
-    } catch (error) {
-      console.error(error);
-      const { showError } = useNotificationStore.getState();
-      showError("Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleUpload(file);
-  };
-
-  return (
-    <div 
-      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={onDrop}
-      style={{ 
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        border: `1px solid ${isDragging ? 'var(--accent-primary)' : 'var(--border)'}`,
-        background: isDragging ? 'var(--bg-hover)' : 'var(--bg-main)',
-        borderRadius: '6px',
-        width: '100%',
-        height: '36px',
-        transition: 'all 0.2s',
-        overflow: 'hidden'
-      }}
-    >
-      <input 
-        value={currentUrl || ''}
-        onChange={(e) => onUpdate(e.target.value)}
-        placeholder="URL or Drop file"
-        style={{ 
-          border: 'none', 
-          background: 'transparent',
-          padding: '8px 30px 8px 10px', 
-          fontSize: '0.75rem',
-          width: '100%',
-          height: '100%',
-          outline: 'none',
-          color: 'var(--text-main)'
-        }}
-      />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        style={{
-          position: 'absolute',
-          right: '4px',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '4px',
-          padding: '4px',
-          cursor: 'pointer',
-          color: 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        title="Upload Media"
-      >
-        {uploading ? <Loader2 className="spin" size={12} /> : <Upload size={12} />}
-      </button>
-      <input 
-        ref={fileInputRef}
-        type="file" 
-        accept="image/*,video/*,audio/*"
-        style={{ display: 'none' }} 
-        onChange={(e) => {
-          handleUpload(e.target.files[0]);
-          e.target.value = null;
-        }}
-      />
-    </div>
-  );
-};
-
-const QuestionCard = React.memo(({ 
-  q, 
-  i, 
+const QuestionCard = React.memo(({
+  q,
+  i,
+  label,
+  questionLabels,
   total,
   questions,
-  updateQuestion, 
-  updateQuestionMultiple, 
-  removeQuestion, 
-  duplicateQuestion, 
+  updateQuestion,
+  updateQuestionMultiple,
+  removeQuestion,
+  duplicateQuestion,
   addOption,
   updateOption,
+  updateOptionMultiple,
   removeOption,
+  addFollowUpQuestion,
   openPreview
 }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  // Score-Based Routing state, shared between the three-dot menu (which owns
+  // only the on/off toggle) and the editor panel at the bottom of this card.
+  const isChoiceQuestion = q.question_type === 'radio' || q.question_type === 'checkbox';
+  const scoreEnabled = q.score_threshold !== null && q.score_threshold !== undefined;
+  const clusterMembers = (q.scale || '').split(',').filter(x => x !== '');
+  const scoreRules = parseScoreRules(q);
+
+  // Other questions whose own "Combine Scores From" cluster already pulls
+  // this question's points in. Each question's Score Rules only ever look at
+  // its own scale/score_rules, so a question can be feeding another's total
+  // while its own panel here shows nothing selected and no rules — without a
+  // flag for that, switching between the two looks like the setup went
+  // missing rather than "this one's score already routes through Q2".
+  const referencedByOthers = (questions || []).reduce((acc, otherQ, qIdx) => {
+    if (qIdx === i) return acc;
+    const otherMembers = (otherQ.scale || '').split(',').filter(x => x !== '');
+    if (otherMembers.includes(String(i))) acc.push(qIdx);
+    return acc;
+  }, []);
+
+  // Rules live in `score_rules` as JSON. The legacy
+  // score_threshold/threshold_next_question pair is kept in sync with the
+  // first rule so older readers (and the scoreEnabled gate above) keep
+  // working unchanged.
+  const writeScoreRules = (rules) => {
+    const first = rules[0];
+    updateQuestionMultiple(i, {
+      score_rules: JSON.stringify(rules),
+      score_threshold: first ? (first.min ?? 0) : 0,
+      threshold_next_question: first ? first.target : null,
+    });
+  };
+
   return (
-    <div className="panel" style={{ borderLeft: '6px solid var(--accent-primary)', padding: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+    <div className="panel" style={{ borderLeft: '6px solid var(--accent-primary)', padding: '1rem 1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ 
-            width: '32px', 
-            height: '32px', 
-            borderRadius: '50%', 
-            background: 'var(--accent-primary)', 
+          <div style={{
+            minWidth: '28px',
+            height: '28px',
+            padding: '0 8px',
+            borderRadius: '14px',
+            background: 'var(--accent-primary)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 800,
             fontSize: '0.9rem'
-          }}>{i + 1}</div>
-          <div style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>SETTINGS</div>
+          }}>{label ?? (i + 1)}</div>
+          {!(Number(q.tier) > 1) && (
+            <div style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>NEW QUESTION</div>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button 
-            onClick={() => duplicateQuestion(i)} 
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              title="Question Options"
+              style={{ padding: '8px', background: menuOpen ? 'rgba(99, 102, 241, 0.12)' : 'none', border: 'none', borderRadius: '6px', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex' }}
+            >
+              <MoreVertical size={18} />
+            </button>
+            {menuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '6px',
+                width: '400px',
+                maxHeight: '520px',
+                overflowY: 'auto',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
+                zIndex: 30,
+                padding: '14px'
+              }}>
+                <div style={{ marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Required <span style={{ color: '#ef4444' }}>*</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateQuestion(i, 'required', !q.required)}
+                      role="switch"
+                      aria-checked={!!q.required}
+                      title="Require an answer to this question"
+                      style={{
+                        width: '38px', height: '20px', borderRadius: '999px', border: 'none', padding: '2px',
+                        background: q.required ? 'var(--accent-primary)' : 'var(--border)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: q.required ? 'flex-end' : 'flex-start',
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', display: 'block' }} />
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    Respondents must answer this question before they can continue.
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <GitBranch size={13} /> Backward Route
+                  </div>
+                  <select
+                    value={q.backward_question === null || q.backward_question === undefined || q.backward_question === '' ? '' : q.backward_question}
+                    onChange={e => updateQuestion(i, 'backward_question', e.target.value === '' ? null : parseInt(e.target.value))}
+                    title="Once this question is answered, go straight to the selected question — whichever answer was given"
+                    style={{ width: '100%', padding: '6px', fontSize: '0.75rem', background: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: '6px', fontWeight: 600, height: '32px' }}
+                  >
+                    <option value="">No jump</option>
+                    {Array.from({ length: total }).map((_, targetIdx) => {
+                       if (targetIdx === i) return null;
+                       const targetQ = questions?.[targetIdx];
+                       if (targetQ?._is_section || targetQ?.question_type === '_section') return null;
+                       return <option key={targetIdx} value={targetIdx}>Go to Q{questionLabels?.[targetIdx] ?? (targetIdx + 1)}</option>;
+                    })}
+                  </select>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    Fires once this question is answered, regardless of which answer was picked, and overrides this question's own Jump Route.
+                    It only changes where the respondent goes next: once the target is answered the survey carries on with the questions
+                    that were skipped over, and finishes only when nothing unanswered is left on their path.
+                  </div>
+                </div>
+
+                {(q.question_type === 'radio' || q.question_type === 'checkbox') && (
+                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ListOrdered size={13} /> Enable Score
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (scoreEnabled) {
+                            updateQuestionMultiple(i, { score_threshold: null, threshold_next_question: null, score_rules: null, scale: '' });
+                          } else {
+                            updateQuestionMultiple(i, {
+                              score_threshold: 0,
+                              threshold_next_question: null,
+                              score_rules: JSON.stringify([{ min: 1, target: null }]),
+                              scale: String(i),
+                            });
+                          }
+                        }}
+                        role="switch"
+                        aria-checked={scoreEnabled}
+                        title="Score-Based Routing: give the options of this question points, and route to another question once a combined score clears a threshold"
+                        style={{
+                          width: '38px', height: '20px', borderRadius: '999px', border: 'none', padding: '2px',
+                          background: scoreEnabled ? 'var(--accent-primary)' : 'var(--border)', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: scoreEnabled ? 'flex-end' : 'flex-start',
+                          transition: 'background 0.2s', flexShrink: 0,
+                        }}
+                      >
+                        <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', display: 'block' }} />
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                      Give each option a score in Choice Options, then set the routing rules in the
+                      Score-Based Routing panel at the bottom of this question.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => duplicateQuestion(i)}
             title="Duplicate Question"
             style={{ padding: '8px', background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer' }}
           >
             <Copy size={18} />
           </button>
-            <button 
-              onClick={() => removeQuestion(i)} 
+            <button
+              onClick={() => removeQuestion(i)}
               style={{ padding: '8px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
             >
               <Trash2 size={18} />
@@ -465,208 +459,355 @@ const QuestionCard = React.memo(({
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '6fr 4fr', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SECTION_GAP }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '6fr 4fr', gap: ROW_GAP, alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>QUESTION</label>
+            <label style={cardLabel}>QUESTION {reqMark}</label>
             <input 
               value={q.question_text} 
               onChange={e => updateQuestion(i, 'question_text', e.target.value)}
               placeholder="Enter your question here..."
-              style={{ height: '40px', width: '100%', borderRadius: '8px' }}
+              style={{ height: CTRL_H, width: '100%', borderRadius: RADIUS }}
             />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>MEDIA TYPE</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-              <select 
-                value={q.media_type || 'none'}
-                onChange={e => {
-                  const val = e.target.value;
-                  updateQuestionMultiple(i, { media_type: val, media_url: val === 'none' ? '' : q.media_url });
-                }}
-                style={{ fontSize: '0.85rem', padding: '8px', height: '40px', borderRadius: '8px', width: '120px', flexShrink: 0, fontWeight: 600 }}
-              >
-                <option value="none">None</option>
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-                <option value="audio">Audio</option>
-              </select>
-
-              <CompactMediaUpload 
-                disabled={!q.media_type || q.media_type === 'none'}
-                onUpload={(url, type) => {
-                  updateQuestionMultiple(i, { media_url: url, media_type: type });
-                }} 
-              />
-              <div style={{ position: 'relative', flexGrow: 1 }}>
-                <LinkIcon size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', opacity: (!q.media_type || q.media_type === 'none') ? 0.5 : 1 }} />
-                <input 
-                  value={q.media_url || ''} 
-                  disabled={!q.media_type || q.media_type === 'none'}
-                  onChange={e => updateQuestion(i, 'media_url', e.target.value)}
-                  placeholder="Paste URL..."
-                  style={{ 
-                    paddingLeft: '32px', 
-                    fontSize: '0.85rem', 
-                    height: '40px', 
-                    borderRadius: '8px',
-                    cursor: (!q.media_type || q.media_type === 'none') ? 'not-allowed' : 'text',
-                    opacity: (!q.media_type || q.media_type === 'none') ? 0.6 : 1
-                  }}
-                />
-              </div>
-            </div>
-
-            {q.media_url && (
-              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                 <div 
-                   title={q.media_url.split('/').pop()}
-                   className="truncate"
-                   style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600, maxWidth: '200px' }}
-                 >
-                   {q.media_url.split('/').pop()}
-                 </div>
-                 <button 
-                  onClick={() => { updateQuestionMultiple(i, { media_url: '', media_type: 'none' }); }}
-                  style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.7rem', padding: 0, flexShrink: 0, cursor: 'pointer' }}
-                 >
-                   (Remove)
-                 </button>
-              </div>
-            )}
+            <label style={cardLabel}>MEDIA ATTACHMENTS</label>
+            <MultiMediaUpload
+              items={parseMediaItems(q)}
+              onChange={(newItems) => updateQuestionMultiple(i, {
+                media_items: stringifyMediaItems(newItems),
+                media_type: newItems[0]?.type || 'none',
+                media_url: newItems[0]?.url || '',
+              })}
+            />
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ width: '250px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>ANSWER TYPE</label>
-              <select 
-                value={q.question_type} 
+        <div style={{ display: 'flex', flexDirection: 'column', gap: ROW_GAP, borderTop: '1px solid var(--border)', paddingTop: SECTION_GAP }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '6fr 4fr', gap: ROW_GAP, alignItems: 'flex-start' }}>
+            <div style={{ maxWidth: '340px' }}>
+              <label style={cardLabel}>ANSWER TYPE {reqMark}</label>
+              <select
+                value={q.question_type}
                 onChange={e => updateQuestion(i, 'question_type', e.target.value)}
-                style={{ fontWeight: 600 }}
+                style={{ height: CTRL_H, padding: '0 12px', fontWeight: 600, borderRadius: RADIUS, width: '100%' }}
               >
                 <option value="text">Short Text Answer</option>
                 <option value="long_text">Paragraph Answer</option>
+                <option value="number">Number Input</option>
+                <option value="phone">Phone Number (10 digits)</option>
                 <option value="radio">Single Choice (Radio Buttons)</option>
                 <option value="checkbox">Multiple Choice (Checkboxes)</option>
-                <option value="select">Score Method</option>
-                <option value="rating">Numeric Rating Scale</option>
+                <option value="rating">Rating Scale</option>
+                <option value="ranking">Ranking (Drag to Order)</option>
+                <option value="matrix">Matrix / Grid</option>
+                <option value="file_upload">Media Upload</option>
               </select>
             </div>
-            <div style={{ width: '140px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>REQUIRED</label>
-              <select 
-                value={q.required ? 'true' : 'false'} 
-                onChange={e => updateQuestion(i, 'required', e.target.value === 'true')}
-                style={{ fontWeight: 600 }}
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ width: '100%' }}>
-            {q.question_type === 'rating' && (
-              <div style={{ background: 'var(--bg-main)', padding: '1.25rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block' }}>RATING SETTINGS</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>Max (e.g. 10)</label>
-                    <input 
-                      type="number" 
-                      value={q.rating_max || 5} 
-                      onChange={e => updateQuestion(i, 'rating_max', parseInt(e.target.value))}
-                      style={{ height: '36px', fontSize: '0.8rem' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>Low Label (Optional)</label>
-                    <input 
-                      value={q.low_label || ''} 
-                      onChange={e => updateQuestion(i, 'low_label', e.target.value)}
-                      placeholder="e.g. Disagree"
-                      style={{ height: '36px', fontSize: '0.8rem' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>High Label (Optional)</label>
-                    <input 
-                      value={q.high_label || ''} 
-                      onChange={e => updateQuestion(i, 'high_label', e.target.value)}
-                      placeholder="e.g. Agree"
-                      style={{ height: '36px', fontSize: '0.8rem' }}
-                    />
-                  </div>
-                </div>
+            {(q.question_type === 'radio' || q.question_type === 'checkbox' || q.question_type === 'select' || q.question_type === 'ranking') && (
+              <div>
+                <label style={cardLabel}>Choice Options</label>
+                <button
+                  onClick={() => addOption(i)}
+                  style={{
+                    fontSize: '0.8rem',
+                    height: CTRL_H,
+                    padding: '0 14px',
+                    border: '1px solid var(--accent-primary)',
+                    background: 'rgba(76, 140, 228, 0.1)',
+                    color: 'var(--accent-primary)',
+                    borderRadius: RADIUS,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--accent-primary)';
+                    e.currentTarget.style.color = 'white';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(76, 140, 228, 0.1)';
+                    e.currentTarget.style.color = 'var(--accent-primary)';
+                  }}
+                >
+                  <Plus size={15} /> Add Option
+                </button>
               </div>
             )}
+           </div>
 
-            {(q.question_type === 'radio' || q.question_type === 'checkbox' || q.question_type === 'select') && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Choice Options</label>
-                  <button 
-                    onClick={() => addOption(i)}
-                    style={{ 
-                      fontSize: '0.75rem', 
-                      padding: '6px 12px', 
-                      border: '1px solid var(--accent-primary)', 
-                      background: 'rgba(99, 102, 241, 0.05)', 
-                      color: 'var(--accent-primary)',
-                      borderRadius: '8px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = 'var(--accent-primary)';
-                      e.currentTarget.style.color = 'white';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)';
-                      e.currentTarget.style.color = 'var(--accent-primary)';
-                    }}
-                  >
-                    + Add Option
-                  </button>
+          <div style={{ width: '100%' }}>
+            {q.question_type === 'rating' && (() => {
+              const style = q.rating_style || 'number';
+              const isWord = style === 'word';
+              // The emoji style labels each face with the same caption list the
+              // word scale uses, so both offer the captions editor. A word scale
+              // is *defined* by its captions; for emoji they are optional.
+              const isEmoji = style === 'emoji';
+              const words = parseLabelList(q.rating_labels);
+              return (
+                <div style={{ background: 'var(--bg-main)', padding: '1.25rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block' }}>RATING SETTINGS</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr 2fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating Style</label>
+                      <select
+                        value={style}
+                        onChange={e => updateQuestion(i, 'rating_style', e.target.value)}
+                        style={{ height: CTRL_H_SM, fontSize: '0.8rem', width: '100%', padding: '0 8px' }}
+                      >
+                        {RATING_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        {isWord ? 'Points' : 'Max (e.g. 10)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={isWord ? (words.length || 0) : (q.rating_max || 5)}
+                        disabled={isWord}
+                        title={isWord ? 'Set by the number of word captions below' : undefined}
+                        onChange={e => updateQuestion(i, 'rating_max', parseInt(e.target.value))}
+                        style={{ height: CTRL_H_SM, fontSize: '0.8rem', opacity: isWord ? 0.6 : 1 }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>Low Label (Optional)</label>
+                      <input
+                        value={q.low_label || ''}
+                        onChange={e => updateQuestion(i, 'low_label', e.target.value)}
+                        placeholder="e.g. Disagree"
+                        style={{ height: CTRL_H_SM, fontSize: '0.8rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>High Label (Optional)</label>
+                      <input
+                        value={q.high_label || ''}
+                        onChange={e => updateQuestion(i, 'high_label', e.target.value)}
+                        placeholder="e.g. Agree"
+                        style={{ height: CTRL_H_SM, fontSize: '0.8rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {(isWord || isEmoji) && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                          {isWord
+                            ? 'Word Captions (one per line, lowest first)'
+                            : 'Face Captions (optional, one per line, lowest first)'}
+                        </label>
+                        {Object.entries(WORD_SCALE_PRESETS).map(([key, preset]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => updateQuestionMultiple(i, {
+                              rating_labels: JSON.stringify(preset),
+                              rating_max: preset.length,
+                            })}
+                            style={{
+                              fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+                              border: '1px solid var(--accent-primary)', background: 'rgba(76, 140, 228, 0.1)',
+                              color: 'var(--accent-primary)', cursor: 'pointer',
+                            }}
+                          >
+                            Use {preset[0]}…{preset[preset.length - 1]}
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={words.join('\n')}
+                        onChange={e => {
+                          const labels = serializeLabelList(e.target.value);
+                          // A word scale's point count *is* its caption count, so
+                          // the two move together. Emoji captions are optional
+                          // decoration, so they leave the admin's Max alone.
+                          updateQuestionMultiple(i, isWord
+                            ? { rating_labels: labels, rating_max: parseLabelList(labels).length }
+                            : { rating_labels: labels });
+                        }}
+                        rows={5}
+                        placeholder={isWord
+                          ? 'Very Bad\nBad\nAverage\nGood\nVery Good'
+                          : 'Poor\nBelow average\nAverage\nGood\nVery impressive'}
+                        style={{ fontSize: '0.8rem', padding: '8px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              );
+            })()}
+
+            {q.question_type === 'matrix' && (() => {
+              const rows = parseLabelList(q.matrix_rows);
+              const cols = parseLabelList(q.matrix_columns);
+              return (
+                <div style={{ background: 'var(--bg-main)', padding: '1.25rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>MATRIX / GRID SETTINGS</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!q.matrix_multi}
+                        onChange={e => updateQuestion(i, 'matrix_multi', e.target.checked)}
+                        style={{ width: '15px', height: '15px', accentColor: 'var(--accent-primary)' }}
+                      />
+                      Allow multiple answers per row (checkbox grid)
+                    </label>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        Rows — statements ({rows.length}), one per line
+                      </label>
+                      <textarea
+                        value={rows.join('\n')}
+                        onChange={e => updateQuestion(i, 'matrix_rows', serializeLabelList(e.target.value))}
+                        rows={5}
+                        placeholder={'Product Quality\nCustomer Service\nSupport\nPricing'}
+                        style={{ fontSize: '0.8rem', padding: '8px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                          Columns — choices ({cols.length}), one per line
+                        </label>
+                        {Object.entries(WORD_SCALE_PRESETS).map(([key, preset]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => updateQuestion(i, 'matrix_columns', JSON.stringify(preset))}
+                            style={{
+                              fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: '6px',
+                              border: '1px solid var(--accent-primary)', background: 'rgba(76, 140, 228, 0.1)',
+                              color: 'var(--accent-primary)', cursor: 'pointer',
+                            }}
+                          >
+                            {preset[0]}…{preset[preset.length - 1]}
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={cols.join('\n')}
+                        onChange={e => updateQuestion(i, 'matrix_columns', serializeLabelList(e.target.value))}
+                        rows={5}
+                        placeholder={'Very Bad\nBad\nAverage\nGood\nVery Good'}
+                        style={{ fontSize: '0.8rem', padding: '8px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  {rows.length > 0 && cols.length > 0 && (
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      Respondents will answer {rows.length} row{rows.length === 1 ? '' : 's'} against {cols.length} choice{cols.length === 1 ? '' : 's'}
+                      {q.matrix_multi ? ', picking any number per row.' : ', picking one per row.'}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {q.question_type === 'file_upload' && (() => {
+              // Empty config means "accept every family we know about", which
+              // is what the backend falls back to as well.
+              const selected = String(q.allowed_file_types || '').split(',').map(s => s.trim()).filter(Boolean);
+              const toggleFamily = (value, on) => {
+                const next = on ? [...new Set([...selected, value])] : selected.filter(v => v !== value);
+                updateQuestion(i, 'allowed_file_types', next.join(','));
+              };
+              return (
+                <div style={{ background: 'var(--bg-main)', padding: '1.25rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block' }}>MEDIA UPLOAD SETTINGS</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '12px', alignItems: 'flex-start' }}>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                        Accepted File Types {selected.length === 0 && <span style={{ color: 'var(--text-muted)' }}>(none picked — all allowed)</span>}
+                      </label>
+                      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                        {FILE_TYPE_FAMILIES.map(f => (
+                          <label key={f.value} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(f.value)}
+                              onChange={e => toggleFamily(f.value, e.target.checked)}
+                              style={{ width: '15px', height: '15px', accentColor: 'var(--accent-primary)' }}
+                            />
+                            {f.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>Max Size (MB)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={q.max_file_size_mb ?? 10}
+                        onChange={e => updateQuestion(i, 'max_file_size_mb', parseInt(e.target.value) || 1)}
+                        style={{ height: CTRL_H_SM, fontSize: '0.8rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {(q.question_type === 'radio' || q.question_type === 'checkbox' || q.question_type === 'select' || q.question_type === 'ranking') && (
+              <div>
+                <div style={
+                  (q.question_type === 'radio' || q.question_type === 'checkbox')
+                    ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }
+                    : { display: 'flex', flexDirection: 'column', gap: '8px' }
+                }>
                   {q.options.map((opt, oIdx) => (
-                    <div key={oIdx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-main)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', position: 'relative' }}>
+                    <div key={oIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--bg-main)', padding: '8px', borderRadius: '10px', border: '1px solid var(--border)', position: 'relative', minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input 
+                        <input
                           value={opt.option_text || ''}
                           onChange={e => updateOption(i, oIdx, 'option_text', e.target.value)}
                           placeholder={`Choice ${oIdx + 1} text...`}
-                          style={{ flexGrow: 1, padding: '8px 10px', fontSize: '0.85rem', fontWeight: 600, height: '36px', borderRadius: '8px' }}
+                          style={{ flexGrow: 1, padding: '4px 10px', fontSize: '0.82rem', fontWeight: 600, height: CTRL_H_SM, borderRadius: RADIUS }}
                         />
-                        {q.question_type === 'select' && (
-                          <div style={{ width: '60px', display: 'flex', alignItems: 'center', background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '8px', border: '1px solid var(--border)', height: '36px' }}>
-                            <input 
+                        {(q.question_type === 'radio' || q.question_type === 'checkbox') &&
+                          q.score_threshold !== null && q.score_threshold !== undefined && (
+                          <div
+                            title="Points this option contributes to the question's score when selected"
+                            style={{ width: '78px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '2px', background: 'var(--bg-card)', padding: '0 6px', borderRadius: '8px', border: '1px solid var(--border)', height: CTRL_H_SM }}
+                          >
+                            <input
                               type="number"
-                              value={opt.score || 0}
-                              onChange={e => updateOption(i, oIdx, 'score', parseInt(e.target.value) || 0)}
-                              style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center', outline: 'none' }}
-                              title="Score"
+                              min="0"
+                              value={opt.score ?? 0}
+                              // Clamped at 0 — a negative option score would
+                              // let one answer cancel out another's points,
+                              // which the "at least N" rules can't express.
+                              onChange={e => updateOption(i, oIdx, 'score', Math.max(0, parseInt(e.target.value) || 0))}
+                              // padding:0 is load-bearing — the global `input`
+                              // rule in index.css sets 0.65rem/0.85rem, which
+                              // in a box this small squeezes the digit out of
+                              // view entirely behind the number spinners.
+                              style={{ width: '100%', minWidth: 0, border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 800, textAlign: 'center', outline: 'none', padding: 0, color: 'var(--accent-primary)' }}
                             />
+                            <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.03em' }}>pts</span>
                           </div>
                         )}
                         <button 
                           onClick={() => removeOption(i, oIdx)}
                           style={{ 
-                            width: '52px',
-                            height: '36px',
+                            width: CTRL_H_SM,
+                            height: CTRL_H_SM,
+                            padding: 0,
                             background: 'rgba(239, 68, 68, 0.05)', 
                             color: '#ef4444', 
                             border: '1px solid rgba(239, 68, 68, 0.15)',
-                            borderRadius: '8px',
+                            borderRadius: RADIUS,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -686,29 +827,60 @@ const QuestionCard = React.memo(({
                           }}
                           title="Remove Choice"
                         >
-                          <X size={20} strokeWidth={2.5} />
+                          <X size={16} strokeWidth={2.5} />
                         </button>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {q.question_type !== 'select' && (
-                          <select 
-                            value={opt.next_question === null || opt.next_question === undefined ? '' : opt.next_question}
-                            onChange={e => updateOption(i, oIdx, 'next_question', e.target.value === '' ? null : parseInt(e.target.value))}
-                            style={{ flexGrow: 1, padding: '8px', fontSize: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontWeight: 600, height: '36px' }}
-                            title="Navigation (Go to Question...)"
-                          >
-                            <option value="">Next Question</option>
-                            <option value="-1">End of Survey</option>
-                            {Array.from({ length: total }).map((_, targetIdx) => (
-                               <option key={targetIdx} value={targetIdx}>Go to Q{targetIdx + 1}</option>
-                            ))}
-                          </select>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'flex-end' }}>
+                        {q.question_type !== 'select' && q.question_type !== 'ranking' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 140px', minWidth: '140px' }}>
+                            <label style={{ ...cardLabel, marginBottom: 0 }}>Jump Route</label>
+                            <select
+                              value={opt.next_question === null || opt.next_question === undefined ? '' : opt.next_question}
+                              onChange={e => updateOption(i, oIdx, 'next_question', e.target.value === '' ? null : parseInt(e.target.value))}
+                              style={{ width: '100%', padding: '4px 8px', fontSize: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: RADIUS, fontWeight: 600, height: CTRL_H_SM }}
+                              title="Where picking this specific answer sends the respondent. Different answers can lead to different questions."
+                            >
+                              <option value="">Next Question</option>
+                              <option value="-1">End of Survey</option>
+                              {Array.from({ length: total }).map((_, targetIdx) => {
+                                 const targetQ = questions?.[targetIdx];
+                                 if (targetQ?._is_section || targetQ?.question_type === '_section') return null;
+                                 return <option key={targetIdx} value={targetIdx}>Go to Q{questionLabels?.[targetIdx] ?? (targetIdx + 1)}</option>;
+                              })}
+                            </select>
+                          </div>
                         )}
-                        <div style={{ flexGrow: 1, minWidth: 0 }}>
-                          <OptionMediaInput 
-                            currentUrl={opt.media_url} 
-                            onUpdate={(url) => updateOption(i, oIdx, 'media_url', url)} 
+                        {q.question_type !== 'select' && q.question_type !== 'ranking' && (
+                          <button
+                            onClick={() => addFollowUpQuestion(i, oIdx)}
+                            title="Add a question to the subsection this answer switches on. Every question in it is skipped when a different answer is picked."
+                            style={{
+                              flexShrink: 0,
+                              padding: '0 10px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              background: 'rgba(99, 102, 241, 0.05)',
+                              color: 'var(--accent-primary)',
+                              border: '1px solid var(--accent-primary)',
+                              borderRadius: '8px',
+                              height: CTRL_H_SM,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            + Sub Section
+                          </button>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '0 0 auto' }}>
+                          <label style={{ ...cardLabel, marginBottom: 0 }}>Media</label>
+                          <MultiMediaUpload
+                            items={parseMediaItems(opt)}
+                            onChange={(newItems) => updateOptionMultiple(i, oIdx, {
+                              media_items: stringifyMediaItems(newItems),
+                              media_type: newItems[0]?.type || null,
+                              media_url: newItems[0]?.url || '',
+                            })}
                           />
                         </div>
                       </div>
@@ -716,172 +888,201 @@ const QuestionCard = React.memo(({
                   ))}
                 </div>
 
-                {q.question_type === 'select' && (
-                  <div style={{ 
-                    background: 'linear-gradient(145deg, rgba(99, 102, 241, 0.03), rgba(99, 102, 241, 0.08))', 
-                    padding: '1.5rem', 
-                    borderRadius: '16px', 
-                    marginTop: '2rem', 
-                    border: '1px dashed var(--accent-primary)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{ 
-                      position: 'absolute', 
-                      top: 0, 
-                      right: 0, 
-                      padding: '8px 12px', 
-                      background: 'var(--accent-primary)', 
-                      color: 'white', 
-                      fontSize: '0.6rem', 
-                      fontWeight: 800, 
-                      borderBottomLeftRadius: '12px',
-                      letterSpacing: '1px'
-                    }}>
-                      SCORE BRANCHING LOGIC
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
-                      <div style={{ 
-                        width: '32px', 
-                        height: '32px', 
-                        borderRadius: '8px', 
-                        background: 'rgba(var(--accent-primary-rgb), 0.1)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        color: 'var(--accent-primary)'
-                      }}>
-                        <ListOrdered size={18} />
-                      </div>
-                      <div>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0 }}>Cumulative Score Redirection</h4>
-                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>Select questions to combine their points and trigger logic jumps</p>
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1.5rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <ClipboardList size={12} /> COMBINE SCORES FROM THESE QUESTIONS
-                        </label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', minHeight: '42px' }}>
-                          {questions && questions.map((otherQ, qIdx) => {
-                            if (otherQ.question_type !== 'radio' && otherQ.question_type !== 'checkbox' && otherQ.question_type !== 'select') return null;
-                            const isSelected = (q.scale || '').split(',').includes(String(qIdx));
-                            const isSelf = qIdx === i;
-                            return (
-                              <button
-                                key={qIdx}
-                                onClick={() => {
-                                  const current = (q.scale || '').split(',').filter(x => x !== '');
-                                  const next = isSelected ? current.filter(x => x !== String(qIdx)) : [...current, String(qIdx)];
-                                  updateQuestion(i, 'scale', next.join(','));
-                                }}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '8px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  background: isSelected ? 'var(--accent-primary)' : 'var(--bg-main)',
-                                  color: isSelected ? 'white' : 'var(--text-muted)',
-                                  border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border)'}`,
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                <span>Q{qIdx + 1} {isSelf && '(Self)'}</span>
-                              </button>
-                            );
-                          })}
-                          {(!q.scale || q.scale.length === 0) && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px 0' }}>Select score questions above to form a logic cluster...</span>}
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <ClipboardList size={12} /> CUMULATIVE SCORE THRESHOLD
-                        </label>
-                        <input 
-                          type="number"
-                          value={q.score_threshold ?? ''} 
-                          onChange={e => updateQuestion(i, 'score_threshold', e.target.value === '' ? null : parseInt(e.target.value))}
-                          placeholder="Min points total..."
-                          style={{ 
-                            height: '42px', 
-                            fontSize: '0.85rem', 
-                            background: 'var(--bg-card)', 
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            fontWeight: 800,
-                            padding: '0 12px',
-                            textAlign: 'center',
-                            color: 'var(--accent-primary)'
-                          }}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Edit3 size={12} /> JUMP TO QUESTION
-                        </label>
-                        <select 
-                          value={q.threshold_next_question ?? ''}
-                          onChange={e => updateQuestion(i, 'threshold_next_question', e.target.value === '' ? null : parseInt(e.target.value))}
-                          style={{ 
-                            height: '42px', 
-                            fontSize: '0.85rem', 
-                            background: 'var(--bg-card)', 
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            padding: '0 12px'
-                          }}
-                        >
-                          <option value="">No Logic Jump</option>
-                          <option value="-1">End of Survey / Results</option>
-                          {Array.from({ length: total }).map((_, targetIdx) => (
-                            <option key={targetIdx} value={targetIdx}>Jump to Q{targetIdx + 1}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div style={{ 
-                      marginTop: '1.25rem', 
-                      padding: '10px 15px', 
-                      background: 'rgba(var(--accent-primary-rgb), 0.05)', 
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px'
-                    }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: q.scale ? 'var(--accent-primary)' : 'var(--border)' }}></div>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                        {q.scale ? (
-                          <>
-                            Aggregating score points from: <strong style={{ color: 'var(--accent-primary)' }}>
-                              {q.scale.split(',').map(idx => `Q${parseInt(idx) + 1}`).join(', ')}
-                            </strong>. 
-                            <br/>If their combined points sum is &ge; <strong>{q.score_threshold || 0}</strong>, the user will be redirected to <strong style={{ color: 'var(--accent-primary)' }}>{q.threshold_next_question === -1 ? 'End of Survey' : `Q${(q.threshold_next_question || 0) + 1}`}</strong>.
-                          </>
-                        ) : (
-                          "Select score questions above to form a logic cluster for score-based dynamic branching."
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {isChoiceQuestion && referencedByOthers.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          marginTop: '1rem', padding: '0.6rem 0.875rem',
+          background: 'rgba(99,102,241,0.08)',
+          border: '1px solid var(--accent-primary)',
+          borderRadius: '8px',
+          fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-primary)',
+        }}
+        title="This question's option points are added into the listed question's own Score-Based Routing total — no separate rules are needed here for that to work."
+        >
+          <GitBranch size={13} style={{ flexShrink: 0 }} />
+          <span>
+            This question&rsquo;s score is combined into{' '}
+            {referencedByOthers.map((qIdx, k) => (
+              <span key={qIdx}>
+                {k > 0 && (k === referencedByOthers.length - 1 ? ' and ' : ', ')}
+                Q{questionLabels?.[qIdx] ?? (qIdx + 1)}
+              </span>
+            ))}
+            &rsquo;s Score-Based Routing.
+          </span>
+        </div>
+      )}
+
+      {isChoiceQuestion && scoreEnabled && (
+        <div style={{
+          marginTop: '1rem', padding: '0.875rem 1rem',
+          background: 'rgba(99,102,241,0.03)',
+          border: '1px dashed var(--accent-primary)',
+          borderRadius: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+            <ListOrdered size={14} style={{ color: 'var(--accent-primary)' }} />
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '0.03em' }}>
+              SCORE-BASED ROUTING
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: '16px', alignItems: 'start' }}>
+            <div>
+              <label style={{ ...cardLabel, marginBottom: '4px' }}>COMBINE SCORES FROM</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', minHeight: '38px' }}>
+                {(() => {
+                  // Grouped by section so it is clear which questions a cluster
+                  // reaches across - a survey can score within one section or
+                  // combine questions from several.
+                  const groups = [];
+                  let current = { label: null, items: [] };
+                  (questions || []).forEach((otherQ, qIdx) => {
+                    if (otherQ._is_section || otherQ.question_type === '_section') {
+                      if (current.items.length) groups.push(current);
+                      current = { label: otherQ.section_label || 'Untitled section', items: [] };
+                      return;
+                    }
+                    if (otherQ.question_type !== 'radio' && otherQ.question_type !== 'checkbox') return;
+                    current.items.push(qIdx);
+                  });
+                  if (current.items.length) groups.push(current);
+
+                  if (!groups.length) {
+                    return <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No scoreable questions yet.</span>;
+                  }
+
+                  return groups.map((group, gIdx) => (
+                    <div key={gIdx} style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                      {group.label && (
+                        <span style={{ width: '100%', fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginTop: gIdx ? '6px' : 0 }}>
+                          {group.label.toUpperCase()}
+                        </span>
+                      )}
+                      {group.items.map((qIdx) => {
+                        const isSelected = clusterMembers.includes(String(qIdx));
+                        const isSelf = qIdx === i;
+                        return (
+                          <button
+                            key={qIdx}
+                            type="button"
+                            onClick={() => {
+                              const next = isSelected
+                                ? clusterMembers.filter(x => x !== String(qIdx))
+                                : [...clusterMembers, String(qIdx)];
+                              updateQuestion(i, 'scale', next.join(','));
+                            }}
+                            style={{
+                              padding: '3px 9px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer',
+                              background: isSelected ? 'var(--accent-primary)' : 'var(--bg-main)',
+                              color: isSelected ? 'white' : 'var(--text-muted)',
+                              border: '1px solid ' + (isSelected ? 'var(--accent-primary)' : 'var(--border)'),
+                            }}
+                          >
+                            Q{questionLabels?.[qIdx] ?? (qIdx + 1)}{isSelf ? ' (Self)' : ''}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ));
+                })()}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                Pick the questions whose points add together. Select just this one to route on its own score.
+              </div>
+            </div>
+
+            <div>
+              <label style={{ ...cardLabel, marginBottom: '4px' }}>SCORE RULES</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {scoreRules.map((rule, rIdx) => (
+                  <div key={rIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>If &ge;</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={rule.min ?? ''}
+                      onChange={e => writeScoreRules(scoreRules.map((r, k) =>
+                        k === rIdx ? { ...r, min: Math.max(0, parseInt(e.target.value) || 0) } : r
+                      ))}
+                      title="Minimum combined score for this rule to apply"
+                      style={{ width: '58px', flexShrink: 0, height: CTRL_H_SM, fontSize: '0.78rem', borderRadius: RADIUS, border: '1px solid var(--border)', padding: '0 6px', fontWeight: 800, textAlign: 'center', color: 'var(--accent-primary)' }}
+                    />
+                    <select
+                      value={rule.target ?? ''}
+                      onChange={e => writeScoreRules(scoreRules.map((r, k) =>
+                        k === rIdx ? { ...r, target: e.target.value === '' ? null : parseInt(e.target.value) } : r
+                      ))}
+                      title="Where to go when this rule wins"
+                      style={{ flexGrow: 1, minWidth: 0, height: CTRL_H_SM, fontSize: '0.78rem', borderRadius: RADIUS, border: '1px solid var(--border)', padding: '0 6px', fontWeight: 600 }}
+                    >
+                      <option value="">Choose a target...</option>
+                      <option value="-1">End of Survey</option>
+                      {Array.from({ length: total }).map((_, targetIdx) => {
+                        if (targetIdx === i) return null;
+                        const targetQ = questions?.[targetIdx];
+                        if (targetQ?._is_section || targetQ?.question_type === '_section') return null;
+                        return <option key={targetIdx} value={targetIdx}>Go to Q{questionLabels?.[targetIdx] ?? (targetIdx + 1)}</option>;
+                      })}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => writeScoreRules(scoreRules.filter((_, k) => k !== rIdx))}
+                      title="Remove this rule"
+                      style={{ flexShrink: 0, width: '28px', height: CTRL_H_SM, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.05)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)', borderRadius: RADIUS, cursor: 'pointer' }}
+                    >
+                      <X size={14} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => writeScoreRules([
+                  ...scoreRules,
+                  { min: Math.max(0, (scoreRules[scoreRules.length - 1]?.min ?? 0) + 1), target: null },
+                ])}
+                style={{ marginTop: '8px', padding: '5px 12px', fontSize: '0.7rem', fontWeight: 700, background: 'rgba(99,102,241,0.05)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', borderRadius: RADIUS, cursor: 'pointer' }}
+              >
+                + Add Rule
+              </button>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                Each rule means &ldquo;score is at least this many points&rdquo;. When several match, the highest one wins.
+                If no rule matches, the survey continues normally.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
+
+const isSectionRow = (q) => !!q && (q._is_section || q.question_type === '_section');
+
+// Which option of `parentQ` switches on the subsection `childQ` belongs to —
+// the authoring-side mirror of resolveActivatingOptionIndex in
+// surveyRouting.js, working on the builder's own in-memory question shape
+// (parent refs as "q_<id>", jump targets as raw array indices) so the
+// condition shown while authoring is the one the respondent-side flow applies.
+//
+// Returns null when the subsection has no condition, i.e. it is shown whenever
+// its parent is answered.
+const subsectionActivatorOf = (childQ, parentQ, childIdx = null) => {
+  if (!childQ || !parentQ || Number(childQ.tier || 1) <= 1) return null;
+  const { parentRef, optionIndex } = parseParentRef(childQ.parent_question_key);
+  if (parentRef !== `q_${parentQ.id}`) return null;
+  if (optionIndex != null) return optionIndex;
+  if (childIdx == null) return null;
+  const direct = (parentQ.options || []).findIndex((o) => o.next_question === childIdx);
+  return direct >= 0 ? direct : null;
+};
 
 const SurveyBuilder = () => {
   const { id } = useParams();
@@ -903,6 +1104,8 @@ const SurveyBuilder = () => {
   const [category, setCategory] = useState('AI');
   const [isNewBatch, setIsNewBatch] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null); // { index, position: 'before' | 'after' }
   const [isEditMode, setIsEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(null);
@@ -923,13 +1126,27 @@ const SurveyBuilder = () => {
   const [isUploadingTranslation, setIsUploadingTranslation] = useState(false);
   const [uploadTranslationCompleted, setUploadTranslationCompleted] = useState(false);
   const [isManualUpload, setIsManualUpload] = useState(false);
+  // Validate & Test (Play): the report popup, and the live test run that a
+  // clean report unlocks.
+  const [validationResult, setValidationResult] = useState(null);
+  const [isTestModeOpen, setIsTestModeOpen] = useState(false);
   const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+  const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const uploadDropdownRef = useRef(null);
+  const toolsMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsTemplateDropdownOpen(false);
+      }
+      if (uploadDropdownRef.current && !uploadDropdownRef.current.contains(event.target)) {
+        setIsUploadDropdownOpen(false);
+      }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target)) {
+        setIsToolsMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -937,126 +1154,6 @@ const SurveyBuilder = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const downloadExcelTemplate = async () => {
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Survey Template');
-
-      // Set values for Title, Category, Description
-      worksheet.getCell('A1').value = 'Survey Title';
-      worksheet.getCell('B1').value = ''; // empty for user to fill
-      worksheet.getCell('A1').font = { bold: true };
-
-      worksheet.getCell('A2').value = 'Category';
-      worksheet.getCell('B2').value = ''; // empty for user to fill
-      worksheet.getCell('A2').font = { bold: true };
-
-      worksheet.getCell('A3').value = 'Survey Description';
-      worksheet.getCell('B3').value = ''; // empty for user to fill
-      worksheet.getCell('A3').font = { bold: true };
-
-      // Header Row on row 5
-      const headers = ['Question Number', 'Question Text', 'Answer Type', 'Options (semicolon-separated)', 'Required (Yes/No)'];
-      worksheet.getRow(5).values = headers;
-      worksheet.getRow(5).font = { bold: true };
-
-      // Set Column widths
-      worksheet.getColumn('A').width = 18;
-      worksheet.getColumn('B').width = 45;
-      worksheet.getColumn('C').width = 20;
-      worksheet.getColumn('D').width = 40;
-      worksheet.getColumn('E').width = 18;
-
-      // Add list data validations (dropdowns) starting from row 6
-      worksheet.dataValidations.add('C6:C100', {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"short,paragraph,radio,check box,score,rating"']
-      });
-
-      worksheet.dataValidations.add('E6:E100', {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Yes,No"']
-      });
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = 'survey_automation_template.xlsx';
-      anchor.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Failed to generate Excel template:", error);
-      const { showError } = useNotificationStore.getState();
-      showError("Failed to generate Excel template: " + error.message);
-    }
-  };
-
-  const downloadManualExcelTemplate = async () => {
-    try {
-      const workbook = new ExcelJS.Workbook();
-      
-      for (const lang of INDIC_LANGUAGES) {
-        const sheetName = lang.name;
-        const worksheet = workbook.addWorksheet(sheetName);
-
-        // Set values for Title, Category, Description
-        worksheet.getCell('A1').value = 'Survey Title';
-        worksheet.getCell('B1').value = ''; // empty for user to fill
-        worksheet.getCell('A1').font = { bold: true };
-
-        worksheet.getCell('A2').value = 'Category';
-        worksheet.getCell('B2').value = ''; // empty for user to fill
-        worksheet.getCell('A2').font = { bold: true };
-
-        worksheet.getCell('A3').value = 'Survey Description';
-        worksheet.getCell('B3').value = ''; // empty for user to fill
-        worksheet.getCell('A3').font = { bold: true };
-
-        // Header Row on row 5
-        const headers = ['Question Number', 'Question Text', 'Answer Type', 'Options (semicolon-separated)', 'Required (Yes/No)'];
-        worksheet.getRow(5).values = headers;
-        worksheet.getRow(5).font = { bold: true };
-
-        // Set Column widths
-        worksheet.getColumn('A').width = 18;
-        worksheet.getColumn('B').width = 45;
-        worksheet.getColumn('C').width = 20;
-        worksheet.getColumn('D').width = 40;
-        worksheet.getColumn('E').width = 18;
-
-        // Add list data validations (dropdowns) starting from row 6
-        worksheet.dataValidations.add('C6:C100', {
-          type: 'list',
-          allowBlank: true,
-          formulae: ['"short,paragraph,radio,check box,score,rating"']
-        });
-
-        worksheet.dataValidations.add('E6:E100', {
-          type: 'list',
-          allowBlank: true,
-          formulae: ['"Yes,No"']
-        });
-      }
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = 'survey_manual_template_13_sheets.xlsx';
-      anchor.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Failed to generate Manual Excel template:", error);
-      const { showError } = useNotificationStore.getState();
-      showError("Failed to generate Manual Excel template: " + error.message);
-    }
-  };
 
   const handleAutomationUpload = (e) => {
     const file = e.target.files[0];
@@ -1067,9 +1164,12 @@ const SurveyBuilder = () => {
       try {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
+        // The Instructions sheet is always added first — skip it explicitly
+        // rather than blindly taking SheetNames[0], which would otherwise
+        // try to parse survey questions out of the instructions prose.
+        const sheetName = workbook.SheetNames.find(name => name.trim().toLowerCase() !== 'instructions') || workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        
+
         const parsedData = parseExcelSheet(sheet);
         if (!parsedData) {
           throw new Error("Could not find headers in Excel template. Please make sure header row exists.");
@@ -1133,9 +1233,11 @@ const SurveyBuilder = () => {
           }
         });
 
-        // Fallback if no English sheet is explicitly found, use the first successfully parsed sheet
+        // Fallback if no English sheet is explicitly found, use the first successfully parsed
+        // sheet — skipping Instructions, which isn't survey data even when it happens to parse.
         if (!baseSurveyData && workbook.SheetNames.length > 0) {
           for (const sheetName of workbook.SheetNames) {
+            if (sheetName.trim().toLowerCase() === 'instructions') continue;
             const sheet = workbook.Sheets[sheetName];
             const parsedData = parseExcelSheet(sheet);
             if (parsedData && parsedData.questions && parsedData.questions.length > 0) {
@@ -1203,8 +1305,12 @@ const SurveyBuilder = () => {
       }} onClick={closePreview}>
         <div style={{ background: 'var(--bg-card)', padding: '2rem', borderRadius: '12px', maxWidth: '600px', width: '90%' }} onClick={e => e.stopPropagation()}>
           <h3 style={{ marginBottom: '1rem' }}>{q.question_text}</h3>
-          {renderMedia(q.media_type, q.media_url)}
-          {(q.question_type === 'radio' || q.question_type === 'checkbox' || q.question_type === 'select') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {parseMediaItems(q).map((item, idx) => (
+              <div key={idx}>{renderMedia(item.type, item.url)}</div>
+            ))}
+          </div>
+          {(q.question_type === 'radio' || q.question_type === 'checkbox' || q.question_type === 'select' || q.question_type === 'ranking') && (
             <ul style={{ marginTop: '1rem' }}>
               {q.options?.map((opt, idx) => (
                 <li key={idx}>{opt.option_text}</li>
@@ -1260,7 +1366,8 @@ const SurveyBuilder = () => {
         description: uploadedSurveyData.description 
       });
       if (survey && survey.id) {
-        await addQuestions(survey.id, uploadedSurveyData.questions.map((q, idx) => ({ ...q, order: idx })));
+        const preparedQuestions = prepareQuestionsForSave(uploadedSurveyData.questions).map((q, idx) => ({ ...q, order: idx }));
+        await addQuestions(survey.id, preparedQuestions);
         showSuccess(`New Survey Created from Upload: ${uploadedSurveyData.title}`);
         setIsUploadPreviewModalOpen(false);
         navigate('/surveys');
@@ -1282,13 +1389,14 @@ const SurveyBuilder = () => {
         if (!data) continue;
         const langObj = INDIC_LANGUAGES.find(l => l.code === langCode);
         const newTitle = `${data.title} (${langObj.name})`;
-        const survey = await createSurvey({ 
-          title: newTitle, 
-          category: uploadedSurveyData.category, 
-          description: data.description 
+        const survey = await createSurvey({
+          title: newTitle,
+          category: uploadedSurveyData.category,
+          description: data.description
         });
         if (survey && survey.id) {
-          await addQuestions(survey.id, data.questions.map((q, idx) => ({ ...q, order: idx })));
+          const preparedQuestions = prepareQuestionsForSave(data.questions).map((q, idx) => ({ ...q, order: idx }));
+          await addQuestions(survey.id, preparedQuestions);
         }
       }
       showSuccess(`Successfully saved all ${selectedLanguages.length} translated surveys!`);
@@ -1313,7 +1421,8 @@ const SurveyBuilder = () => {
         description: uploadedSurveyData.description 
       });
       if (originalSurvey && originalSurvey.id) {
-        await addQuestions(originalSurvey.id, uploadedSurveyData.questions.map((q, idx) => ({ ...q, order: idx })));
+        const preparedQuestions = prepareQuestionsForSave(uploadedSurveyData.questions).map((q, idx) => ({ ...q, order: idx }));
+        await addQuestions(originalSurvey.id, preparedQuestions);
       }
 
       // 2. Save all translations
@@ -1322,13 +1431,14 @@ const SurveyBuilder = () => {
         if (!data) continue;
         const langObj = INDIC_LANGUAGES.find(l => l.code === langCode);
         const newTitle = `${data.title} (${langObj.name})`;
-        const survey = await createSurvey({ 
-          title: newTitle, 
-          category: uploadedSurveyData.category, 
-          description: data.description 
+        const survey = await createSurvey({
+          title: newTitle,
+          category: uploadedSurveyData.category,
+          description: data.description
         });
         if (survey && survey.id) {
-          await addQuestions(survey.id, data.questions.map((q, idx) => ({ ...q, order: idx })));
+          const preparedQuestions = prepareQuestionsForSave(data.questions).map((q, idx) => ({ ...q, order: idx }));
+          await addQuestions(survey.id, preparedQuestions);
         }
       }
 
@@ -1836,50 +1946,320 @@ const SurveyBuilder = () => {
       
       // Transform backend question structure to builder structure
       if (currentSurvey.questions) {
-        const mappedQuestions = currentSurvey.questions
-          .sort((a, b) => a.order - b.order)
-          .map(q => ({
-            id: q.id,
-            question_text: q.question_text,
-            question_type: q.question_type,
-            media_type: q.media_type,
-            media_url: q.media_url,
-            required: q.required,
-            options: q.options?.sort((a,b) => a.order - b.order).map(o => ({
-              option_text: o.option_text || '',
-              next_question: o.next_question ?? null,
-              score: o.score || 0,
-              is_red_flag: o.is_red_flag || false,
-              media_url: o.media_url || ''
-            })) || [],
-            rating_max: q.rating_max || 5,
-            low_label: q.low_label || '',
-            high_label: q.high_label || '',
-            scale: q.scale || '',
-            score_threshold: q.score_threshold ?? null,
-            threshold_next_question: q.threshold_next_question ?? null
-          }));
+        const sortedDbQuestions = currentSurvey.questions.slice().sort((a, b) => a.order - b.order);
+
+        // parent_question_key is stored as "idx_<arrayPosition>" (see
+        // prepareQuestionsForSave) since ids aren't stable across saves —
+        // resolve it back to "q_<id>" here using the ids the backend just
+        // assigned, so the rest of the builder's UI/logic (dropdowns,
+        // nested-branch rendering) can keep working off the id-based form
+        // it already expects. Any older "q_<id>" value is passed through
+        // unchanged as a fallback.
+        // A trailing ":opt_<n>" (the option that activates this subsection —
+        // see surveyRouting.parseParentRef) is position-independent, so it
+        // rides through the conversion untouched.
+        const resolveParentKey = (rawKey) => {
+          if (!rawKey) return null;
+          const { parentRef, optionIndex } = parseParentRef(rawKey);
+          const m = /^idx_(\d+)$/.exec(String(parentRef || ''));
+          if (!m) return formatParentRef(parentRef, optionIndex);
+          const parentRow = sortedDbQuestions[parseInt(m[1], 10)];
+          return parentRow ? formatParentRef(`q_${parentRow.id}`, optionIndex) : null;
+        };
+
+        const mappedQuestions = sortedDbQuestions
+          .map(q => {
+            // Section dividers are stored as real Question rows (question_type
+            // '_section') so they persist and reload with the survey; rebuild
+            // the local pseudo-question shape the builder UI renders.
+            if (q.question_type === '_section') {
+              return {
+                id: q.id,
+                _is_section: true,
+                section_label: q.question_text || '',
+                question_text: '',
+                question_type: '_section',
+                options: [],
+              };
+            }
+            return {
+              id: q.id,
+              question_text: q.question_text,
+              question_type: q.question_type,
+              media_type: q.media_type,
+              media_url: q.media_url,
+              media_items: q.media_items || null,
+              required: q.required,
+              options: q.options?.sort((a,b) => a.order - b.order).map(o => ({
+                option_text: o.option_text || '',
+                next_question: o.next_question ?? null,
+                score: o.score || 0,
+                is_red_flag: o.is_red_flag || false,
+                media_url: o.media_url || '',
+                media_type: o.media_type || 'image',
+                media_items: o.media_items || null,
+                emoji: o.emoji || ''
+              })) || [],
+              rating_max: q.rating_max || 5,
+              low_label: q.low_label || '',
+              high_label: q.high_label || '',
+              rating_style: q.rating_style || 'number',
+              rating_labels: q.rating_labels || null,
+              allowed_file_types: q.allowed_file_types || '',
+              max_file_size_mb: q.max_file_size_mb ?? 10,
+              matrix_rows: q.matrix_rows || null,
+              matrix_columns: q.matrix_columns || null,
+              matrix_multi: q.matrix_multi || false,
+              scale: q.scale || '',
+              score_threshold: q.score_threshold ?? null,
+              score_rules: q.score_rules ?? null,
+              threshold_next_question: q.threshold_next_question ?? null,
+              backward_question: q.backward_question ?? null,
+              tier: q.tier ?? 1,
+              parent_question_key: resolveParentKey(q.parent_question_key)
+            };
+          });
         setQuestions(mappedQuestions);
       }
     }
   }, [currentSurvey, id]);
 
   const addQuestion = () => {
-    setQuestions([...questions, { 
+    setQuestions([...questions, {
       id: `temp-${Date.now()}-${Math.random()}`,
-      question_text: '', 
-      question_type: 'text', 
-      media_type: 'none', 
+      question_text: '',
+      question_type: 'text',
+      media_type: 'none',
       media_url: '',
+      media_items: null,
       required: true,
-      options: [], 
+      options: [],
       rating_max: 5,
       low_label: '',
       high_label: '',
+      rating_style: 'number',
+      rating_labels: null,
+      allowed_file_types: '',
+      max_file_size_mb: 10,
+      matrix_rows: null,
+      matrix_columns: null,
+      matrix_multi: false,
       scale: '',
       score_threshold: null,
-      threshold_next_question: null
+      score_rules: null,
+      threshold_next_question: null,
+      backward_question: null,
+      tier: 1,
+      parent_question_key: null
     }]);
+  };
+
+  const addSection = (label = 'New Section') => {
+    setQuestions(prev => [...prev, {
+      id: `section-${Date.now()}-${Math.random()}`,
+      _is_section: true,
+      section_label: label,
+      question_text: '',
+      question_type: '_section',
+      required: false,
+      options: [],
+    }]);
+  };
+
+  // Section dividers round-trip through the DB as real Question rows (no
+  // schema change needed) so they persist and reload with the survey. This
+  // maps the local pseudo-question shape back to a savable question payload,
+  // carrying the editable label into question_text.
+  //
+  // parent_question_key also gets rewritten here, from the in-memory
+  // "q_<id>" form into a stable "idx_<arrayPosition>" form. Every save does
+  // a full delete-all + insert-all of a survey's questions (there's no
+  // per-question update endpoint), so every question gets a brand new DB id
+  // each time — a saved "q_<id>" reference would already be pointing at a
+  // row that no longer exists by the time the insert finishes. Array
+  // position survives that cycle (the same trick option jumps already rely
+  // on via next_question), so it's what gets persisted; the reload effect
+  // below converts it back to "q_<id>" using the freshly assigned ids.
+  const prepareQuestionsForSave = (arr) => {
+    const idxByLocalKey = new Map();
+    arr.forEach((q, idx) => {
+      if (isSectionRow(q)) return;
+      idxByLocalKey.set(`q_${q.id}`, idx);
+    });
+
+    return arr.map(q => {
+      if (isSectionRow(q)) {
+        return {
+          question_text: q.section_label || '',
+          question_type: '_section',
+          media_type: 'none',
+          media_url: null,
+          required: false,
+          options: [],
+          rating_max: 5,
+          low_label: '',
+          high_label: '',
+          scale: '',
+          score_threshold: null,
+          score_rules: null,
+          threshold_next_question: null,
+          backward_question: null,
+          tier: 1,
+          parent_question_key: null,
+        };
+      }
+      const { parentRef, optionIndex } = parseParentRef(q.parent_question_key);
+      const parentIdx = Number(q.tier) > 1 && parentRef
+        ? idxByLocalKey.get(parentRef)
+        : undefined;
+      return {
+        ...q,
+        parent_question_key:
+          parentIdx !== undefined ? formatParentRef(`idx_${parentIdx}`, optionIndex) : null,
+      };
+    });
+  };
+
+  // Group tier-N (follow-up, tier 2-5) questions under their parent so each
+  // branch renders as a nested block in the builder, and compute a
+  // hierarchical display label for every question: root questions get
+  // sequential whole numbers (1, 2, 3...), and any question with a valid
+  // parent gets "<parent label>.<sibling index>" (3.1, 3.2, 3.1.1, ...),
+  // recursively — so tiers 2 through 5 all nest and number correctly no
+  // matter how deep the chain goes. This is purely a rendering concern —
+  // the underlying array order, indices and saved next_question jump
+  // targets are untouched.
+  const { questionLabels, childrenByParentIdx, nestedChildIndexSet } = useMemo(
+    () => computeQuestionLabels(questions),
+    [questions]
+  );
+
+  // Which option on the parent switches THIS specific child on — used so each
+  // branch gets its own "shown when … " label rather than one label being
+  // applied to every child lumped together.
+  const branchOptionForChild = (parentQ, childIdx) => {
+    const index = subsectionActivatorOf(questions[childIdx], parentQ, childIdx);
+    if (index == null || !parentQ?.options?.[index]) return null;
+    return { option: parentQ.options[index], index };
+  };
+
+  // Recursively renders a question card and, one by one, each of its
+  // tier-2..5 follow-up branches to arbitrary depth. Every child gets its
+  // own individually-labeled block (rather than being merged into a single
+  // shared block) so questions reached by different options are never
+  // shown as if they belonged to the same branch.
+  const renderQuestionBlock = (idx) => {
+    const bq = questions[idx];
+    const kids = childrenByParentIdx[idx] || [];
+    return (
+      <div key={bq.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <QuestionCard
+          q={bq}
+          i={idx}
+          label={questionLabels[idx]}
+          questionLabels={questionLabels}
+          total={questions.length}
+          questions={questions}
+          updateQuestion={updateQuestion}
+          updateQuestionMultiple={updateQuestionMultiple}
+          removeQuestion={removeQuestion}
+          duplicateQuestion={duplicateQuestion}
+          moveQuestion={moveQuestion}
+          addOption={addOption}
+          updateOption={updateOption}
+          updateOptionMultiple={updateOptionMultiple}
+          autoAssignScores={autoAssignScores}
+          openPreview={openPreview}
+          removeOption={removeOption}
+          addFollowUpQuestion={addFollowUpQuestion}
+        />
+        {kids.map(childIdx => (
+          <div key={`branch-${questions[childIdx].id || childIdx}`} style={{
+            marginLeft: '28px',
+            paddingLeft: '24px',
+            borderLeft: '3px dashed rgba(99,102,241,0.35)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+          }}>
+            {(() => {
+              // Subsection Routing header: the condition that switches this
+              // group on, editable in place. Only the first question of a
+              // subsection shows the picker — the rest inherit the same
+              // condition by belonging to the branch, and are labelled as
+              // continuations so it's clear they aren't separately gated.
+              const tierLabel = questionLabels?.[childIdx] ?? String(childIdx + 1);
+              const found = branchOptionForChild(bq, childIdx);
+              const siblings = childrenByParentIdx[idx] || [];
+              const isBranchEntry =
+                found == null ||
+                siblings.findIndex(sib => branchOptionForChild(bq, sib)?.index === found.index) === siblings.indexOf(childIdx);
+              const pickable = (bq.options || []).length > 0;
+
+              return (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 12px',
+                  borderRadius: '999px',
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid var(--accent-primary)',
+                  color: 'var(--accent-primary)',
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  width: 'fit-content',
+                }}>
+                  <GitBranch size={12} />
+                  <span>SUBSECTION {tierLabel}</span>
+                  {pickable && isBranchEntry ? (
+                    <>
+                      <span style={{ fontWeight: 700, opacity: 0.8 }}>
+                        SHOWN WHEN Q{questionLabels?.[idx] ?? (idx + 1)} =
+                      </span>
+                      <select
+                        value={found?.index ?? ''}
+                        onChange={e => setSubsectionActivator(
+                          childIdx,
+                          idx,
+                          e.target.value === '' ? null : parseInt(e.target.value, 10)
+                        )}
+                        title="Which answer to the parent question switches this subsection on. Any other answer skips every question inside it."
+                        style={{
+                          padding: '2px 6px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          color: 'var(--accent-primary)',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--accent-primary)',
+                          borderRadius: '6px',
+                          height: '22px',
+                        }}
+                      >
+                        <option value="">Any answer</option>
+                        {(bq.options || []).map((opt, oi) => (
+                          <option key={oi} value={oi}>
+                            {opt.option_text?.trim() || `Option ${oi + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <span style={{ fontWeight: 700, opacity: 0.8 }}>
+                      {found
+                        ? `CONTINUES THE "${found.option?.option_text?.trim() || `Option ${found.index + 1}`}" BRANCH`
+                        : 'FOLLOW-UP QUESTION'}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+            {renderQuestionBlock(childIdx)}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const removeQuestion = (index) => {
@@ -1889,8 +2269,8 @@ const SurveyBuilder = () => {
   const duplicateQuestion = (index) => {
     setQuestions(prev => {
       const q = prev[index];
-      const newQ = { 
-        ...q, 
+      const newQ = {
+        ...q,
         id: `temp-${Date.now()}-${Math.random()}`,
         options: q.options.map(o => ({ ...o })),
         low_label: q.low_label,
@@ -1903,13 +2283,76 @@ const SurveyBuilder = () => {
     });
   };
 
+  // Relocates a single top-level row (a question or a section divider) to a
+  // new position via drag-and-drop, remapping every next_question /
+  // threshold_next_question jump target elsewhere in the array so existing
+  // branching logic keeps pointing at the same question after the move.
+  // Nested follow-up children don't need remapping — they stay linked to
+  // their parent via the id-based parent_question_key, not by position.
+  const reorderQuestions = (fromIndex, toIndex) => {
+    setQuestions(prev => {
+      if (fromIndex == null || toIndex == null) return prev;
+      if (fromIndex === toIndex || fromIndex + 1 === toIndex) return prev; // dropped back where it started
+
+      const arr = [...prev];
+      const [moved] = arr.splice(fromIndex, 1);
+      const insertAt = toIndex > fromIndex ? toIndex - 1 : toIndex;
+      arr.splice(insertAt, 0, moved);
+
+      const oldToNew = new Map();
+      for (let oldIdx = 0; oldIdx < prev.length; oldIdx++) {
+        if (oldIdx === fromIndex) { oldToNew.set(oldIdx, insertAt); continue; }
+        let pos = oldIdx;
+        if (oldIdx > fromIndex) pos -= 1;
+        if (pos >= insertAt) pos += 1;
+        oldToNew.set(oldIdx, pos);
+      }
+      const remap = (val) => (val === null || val === undefined || val === -1 || !oldToNew.has(val)) ? val : oldToNew.get(val);
+
+      // Score-Based Routing stores its own positional references — the
+      // "Combine Scores From" cluster in `scale` (comma-joined indices) and
+      // each rule's `target` inside `score_rules` (JSON) — separately from
+      // threshold_next_question. threshold_next_question is only kept as a
+      // legacy mirror of score_rules[0].target (see writeScoreRules), so
+      // remapping it alone left the real score_rules list, and the scale
+      // cluster, pointing at stale indices after a drag-and-drop move —
+      // silently breaking Score-Based Routing on the next edit.
+      const remapScale = (scale) => String(scale ?? '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => {
+          const n = parseInt(s, 10);
+          return Number.isInteger(n) ? remap(n) : s;
+        })
+        .join(',');
+      const remapScoreRules = (raw) => {
+        if (!raw) return raw;
+        let rules;
+        try { rules = JSON.parse(raw); } catch { return raw; }
+        if (!Array.isArray(rules)) return raw;
+        return JSON.stringify(rules.map(r => ({ ...r, target: remap(r?.target) })));
+      };
+
+      return arr.map(item => ({
+        ...item,
+        threshold_next_question: remap(item.threshold_next_question),
+        backward_question: remap(item.backward_question),
+        options: item.options ? item.options.map(opt => ({ ...opt, next_question: remap(opt.next_question) })) : item.options,
+        scale: remapScale(item.scale),
+        score_rules: remapScoreRules(item.score_rules),
+      }));
+    });
+  };
+
   const moveQuestion = (index, direction) => {
     setQuestions(prev => {
       if (direction === 'up' && index === 0) return prev;
       if (direction === 'down' && index === prev.length - 1) return prev;
-      
-      const newQuestions = [...prev];
+
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+      const newQuestions = [...prev];
       [newQuestions[index], newQuestions[targetIndex]] = [newQuestions[targetIndex], newQuestions[index]];
       return newQuestions;
     });
@@ -1928,27 +2371,135 @@ const SurveyBuilder = () => {
   };
 
   const addOption = (qIndex) => {
-    setQuestions(prev => prev.map((q, i) => 
-      i === qIndex ? { ...q, options: [...q.options, { option_text: '', next_question: null, score: 0, is_red_flag: false, media_url: '' }] } : q
+    setQuestions(prev => prev.map((q, i) =>
+      i === qIndex ? { ...q, options: [...q.options, { option_text: '', next_question: null, score: 0, is_red_flag: false, media_url: '', media_type: 'image', media_items: null, emoji: '' }] } : q
     ));
   };
 
   const updateOption = (qIndex, oIndex, field, value) => {
-    setQuestions(prev => prev.map((q, i) => 
-      i === qIndex ? { 
-        ...q, 
-        options: q.options.map((opt, oi) => oi === oIndex ? { ...opt, [field]: value } : opt) 
+    setQuestions(prev => prev.map((q, i) =>
+      i === qIndex ? {
+        ...q,
+        options: q.options.map((opt, oi) => oi === oIndex ? { ...opt, [field]: value } : opt)
+      } : q
+    ));
+  };
+
+  const updateOptionMultiple = (qIndex, oIndex, updates) => {
+    setQuestions(prev => prev.map((q, i) =>
+      i === qIndex ? {
+        ...q,
+        options: q.options.map((opt, oi) => oi === oIndex ? { ...opt, ...updates } : opt)
       } : q
     ));
   };
 
   const removeOption = (qIndex, oIndex) => {
-    setQuestions(prev => prev.map((q, i) => 
-      i === qIndex ? { 
-        ...q, 
-        options: q.options.filter((_, oi) => oi !== oIndex) 
+    setQuestions(prev => prev.map((q, i) =>
+      i === qIndex ? {
+        ...q,
+        options: q.options.filter((_, oi) => oi !== oIndex)
       } : q
     ));
+  };
+
+  // Creates a new tier-N follow-up question in one step: appends it to the
+  // end of the list (never inserted mid-array, so no other saved
+  // next_question jump indices anywhere in the survey can shift), sets its
+  // tier one below its parent's and points its parent_question_key at the
+  // source question, and wires the clicked option's next_question straight
+  // at it — replacing what used to be 4 separate manual steps (add question,
+  // set tier, set parent, find it in the option's jump dropdown).
+  // Adds a question to the subsection hanging off one option of question
+  // `qIndex` — the Subsection Routing of survey_navigation_routing_logic.md.
+  //
+  // The activating option is written into the child's parent_question_key as
+  // "<parent>:opt_<n>" so the condition is recorded explicitly rather than
+  // inferred from whichever option happens to jump at the child. That matters
+  // once a subsection holds more than one question: only the first is the
+  // branch entry the parent option jumps to, and the rest are reached by
+  // walking the subsection, so they would otherwise have no condition of their
+  // own and could be mistaken for questions on every path.
+  const addFollowUpQuestion = (qIndex, oIndex) => {
+    setQuestions(prev => {
+      const parentQ = prev[qIndex];
+      if (!parentQ) return prev;
+      const followUp = {
+        id: `temp-${Date.now()}-${Math.random()}`,
+        question_text: '',
+        question_type: 'text',
+        media_type: 'none',
+        media_url: '',
+        media_items: null,
+        required: true,
+        options: [],
+        rating_max: 5,
+        low_label: '',
+        high_label: '',
+        rating_style: 'number',
+        rating_labels: null,
+        allowed_file_types: '',
+        max_file_size_mb: 10,
+        matrix_rows: null,
+        matrix_columns: null,
+        matrix_multi: false,
+        scale: '',
+        score_threshold: null,
+        score_rules: null,
+        threshold_next_question: null,
+        backward_question: null,
+        tier: Math.min((Number(parentQ.tier) || 1) + 1, 5),
+        parent_question_key: `q_${parentQ.id}:opt_${oIndex}`
+      };
+      const followUpIndex = prev.length;
+
+      // Only the first question of a subsection is the option's jump target.
+      // Later ones join the existing branch, so the option keeps pointing at
+      // the entry question and the respondent walks the subsection in order.
+      const branchAlreadyOpen = prev.some(
+        (q, qi) => subsectionActivatorOf(q, parentQ, qi) === oIndex
+      );
+      const updated = branchAlreadyOpen ? prev : prev.map((q, i) => i === qIndex ? {
+        ...q,
+        options: q.options.map((opt, oi) => oi === oIndex ? { ...opt, next_question: followUpIndex } : opt)
+      } : q);
+      return [...updated, followUp];
+    });
+  };
+
+  // Re-points an existing subsection at a different option of its parent, so
+  // an author can change "shown when Do you drink? = Yes" to any other option
+  // without rebuilding the branch. The parent's Jump Route moves with it when
+  // this question is the branch entry, keeping the two halves consistent.
+  const setSubsectionActivator = (childIdx, parentIdx, optionIndex) => {
+    setQuestions(prev => {
+      const child = prev[childIdx];
+      const parentQ = prev[parentIdx];
+      if (!child || !parentQ) return prev;
+
+      const previousActivator = subsectionActivatorOf(child, parentQ, childIdx);
+      const isBranchEntry = (parentQ.options || []).some(
+        (opt, oi) => oi === previousActivator && opt.next_question === childIdx
+      );
+      const { parentRef } = parseParentRef(child.parent_question_key);
+
+      return prev.map((q, i) => {
+        if (i === childIdx) {
+          return { ...q, parent_question_key: formatParentRef(parentRef || `q_${parentQ.id}`, optionIndex) };
+        }
+        if (i === parentIdx && isBranchEntry) {
+          return {
+            ...q,
+            options: q.options.map((opt, oi) => {
+              if (oi === previousActivator) return { ...opt, next_question: null };
+              if (oi === optionIndex) return { ...opt, next_question: childIdx };
+              return opt;
+            }),
+          };
+        }
+        return q;
+      });
+    });
   };
 
   const autoAssignScores = (qIndex) => {
@@ -1996,7 +2547,7 @@ const SurveyBuilder = () => {
         description: translatedSurveyData.description 
       });
       if (survey && survey.id) {
-        await addQuestions(survey.id, translatedSurveyData.questions.map((q, idx) => ({ ...q, order: idx })));
+        await addQuestions(survey.id, prepareQuestionsForSave(translatedSurveyData.questions).map((q, idx) => ({ ...q, order: idx })));
         showSuccess(`New Survey Created: ${newTitle}`);
         setIsTranslationModalOpen(false);
         navigate('/surveys');
@@ -2031,7 +2582,7 @@ const SurveyBuilder = () => {
         description: translatedSurveyData.description 
       });
       await clearQuestions(id);
-      await addQuestions(id, translatedSurveyData.questions.map((q, idx) => ({ ...q, order: idx })));
+      await addQuestions(id, prepareQuestionsForSave(translatedSurveyData.questions).map((q, idx) => ({ ...q, order: idx })));
       showSuccess('Changes Saved Successfully');
       setIsTranslationModalOpen(false);
       navigate('/surveys');
@@ -2046,8 +2597,9 @@ const SurveyBuilder = () => {
     if (!translatedSurveyData) return;
     const { showSuccess, showError } = useNotificationStore.getState();
     if (!title) return showError('Survey title is required');
-    if (questions.length === 0) return showError('Please add at least one question');
-    
+    const realQuestions = questions.filter(q => !q._is_section && q.question_type !== '_section');
+    if (realQuestions.length === 0) return showError('Please add at least one question');
+
     setSaving(true);
     try {
       // 1. Save original
@@ -2055,24 +2607,24 @@ const SurveyBuilder = () => {
       if (isEditMode) {
         await updateSurvey(id, { title, category, description });
         await clearQuestions(id);
-        await addQuestions(id, questions.map((q, idx) => ({ ...q, order: idx })));
+        await addQuestions(id, prepareQuestionsForSave(questions).map((q, idx) => ({ ...q, order: idx })));
       } else {
         const survey = await createSurvey({ title, category, description });
         if (survey && survey.id) {
           originalSurveyId = survey.id;
-          await addQuestions(survey.id, questions.map((q, idx) => ({ ...q, order: idx })));
+          await addQuestions(survey.id, prepareQuestionsForSave(questions).map((q, idx) => ({ ...q, order: idx })));
         }
       }
 
       // 2. Save translated as new
       const translatedTitle = `${translatedSurveyData.title} (${translationLanguage.name})`;
-      const translatedSurvey = await createSurvey({ 
-        title: translatedTitle, 
-        category, 
-        description: translatedSurveyData.description 
+      const translatedSurvey = await createSurvey({
+        title: translatedTitle,
+        category,
+        description: translatedSurveyData.description
       });
       if (translatedSurvey && translatedSurvey.id) {
-        await addQuestions(translatedSurvey.id, translatedSurveyData.questions.map((q, idx) => ({ ...q, order: idx })));
+        await addQuestions(translatedSurvey.id, prepareQuestionsForSave(translatedSurveyData.questions).map((q, idx) => ({ ...q, order: idx })));
       }
       
       showSuccess(`Successfully saved both original and translated (${translationLanguage.name}) surveys!`);
@@ -2296,10 +2848,30 @@ const SurveyBuilder = () => {
     );
   };
 
+  // Validate & Test (Play). Runs every structural check over the draft as it
+  // stands right now — unsaved edits included — and shows the report. Test Mode
+  // is only unlocked from that report, and only when there are no errors.
+  const handleValidate = () => {
+    setValidationResult(validateSurvey(questions, { title, description, category }));
+  };
+
+  const handleStartTestMode = () => {
+    setValidationResult(null);
+    setIsTestModeOpen(true);
+  };
+
+  // The draft in the exact shape the real respondent flow consumes, so Test
+  // Mode exercises the same adapter, engine and branching rules as a live run.
+  const testModeQuestions = useMemo(
+    () => (isTestModeOpen ? draftToDbShape(questions) : null),
+    [isTestModeOpen, questions]
+  );
+
   const handleSave = async () => {
     const { showSuccess, showError } = useNotificationStore.getState();
     if (!title) return showError('Survey title is required');
-    if (questions.length === 0) return showError('Please add at least one question');
+    const realQuestions = questions.filter(q => !q._is_section && q.question_type !== '_section');
+    if (realQuestions.length === 0) return showError('Please add at least one question');
     
     setSaving(true);
     try {
@@ -2307,14 +2879,14 @@ const SurveyBuilder = () => {
         // Update Cycle
         await updateSurvey(id, { title, category, description });
         await clearQuestions(id);
-        await addQuestions(id, questions.map((q, idx) => ({ ...q, order: idx })));
+        await addQuestions(id, prepareQuestionsForSave(questions).map((q, idx) => ({ ...q, order: idx })));
         showSuccess('Changes Saved Successfully');
         navigate('/surveys');
       } else {
         // Create Cycle
         const survey = await createSurvey({ title, category, description });
         if (survey && survey.id) {
-          await addQuestions(survey.id, questions.map((q, idx) => ({ ...q, order: idx })));
+          await addQuestions(survey.id, prepareQuestionsForSave(questions).map((q, idx) => ({ ...q, order: idx })));
           showSuccess('New Survey Created');
           navigate('/surveys');
         }
@@ -2337,31 +2909,40 @@ const SurveyBuilder = () => {
 
   return (
     <div style={{ animation: 'fade-in 0.4s ease-out', maxWidth: '1400px', margin: '0 auto', paddingBottom: '5rem' }}>
-      <div className="page-header-container">
-        <div className="page-header">
-          <h1>{isEditMode ? 'Edit Survey' : 'Create Survey'}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => navigate('/surveys')}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+            <div style={{ width: '1px', height: '16px', background: 'var(--border)' }} />
+            <h1 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>{isEditMode ? 'Edit Survey' : 'Create Survey'}</h1>
+          </div>
           {isEditMode && (
-            <p className="truncate" style={{ maxWidth: '100%', color: 'var(--text-muted)' }} title={`Modify the configuration for "${title}" in the ${category} category.`}>
+            <p className="truncate" style={{ maxWidth: '100%', margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }} title={`Modify the configuration for "${title}" in the ${category} category.`}>
               Modify the configuration for <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>"{title || '...'}"</span> in the <span style={{ fontWeight: 600 }}>{category}</span>.
             </p>
           )}
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {isEditMode && <button disabled={saving} onClick={() => navigate('/surveys')} style={{ background: 'none', border: '1px solid var(--border)', height: '48px', padding: '0 1.5rem', borderRadius: '10px', cursor: 'pointer' }}>Cancel</button>}
-            
+
             {!isEditMode && (
               <>
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
-                  <button 
+                  <button
                     onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '8px', 
-                      fontSize: '0.85rem', 
-                      fontWeight: 700, 
-                      padding: '0 1.5rem', 
-                      borderRadius: '10px',
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      padding: '0 1.5rem',
+                      borderRadius: 'var(--radius)',
                       background: 'var(--bg-card)',
                       border: `1.5px solid ${isTemplateDropdownOpen ? 'var(--accent-primary)' : 'var(--border)'}`,
                       cursor: 'pointer',
@@ -2374,9 +2955,9 @@ const SurveyBuilder = () => {
                   >
                     <FileDown size={16} />
                     Download Template
-                    <ChevronDown size={14} style={{ 
-                      transition: 'transform 0.2s', 
-                      transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none' 
+                    <ChevronDown size={14} style={{
+                      transition: 'transform 0.2s',
+                      transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none'
                     }} />
                   </button>
                   {isTemplateDropdownOpen && (
@@ -2387,8 +2968,8 @@ const SurveyBuilder = () => {
                       width: '280px',
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border)',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+                      borderRadius: 'var(--radius)',
+                      boxShadow: 'var(--shadow)',
                       zIndex: 1000,
                       padding: '0.5rem',
                       display: 'flex',
@@ -2396,9 +2977,12 @@ const SurveyBuilder = () => {
                       gap: '4px',
                       animation: 'fade-in 0.15s ease-out'
                     }}>
-                      <button 
+                      <button
                         onClick={() => {
-                          downloadExcelTemplate();
+                          downloadExcelTemplate().catch(err => {
+                            console.error('Failed to generate Excel template:', err);
+                            useNotificationStore.getState().showError('Failed to generate Excel template: ' + err.message);
+                          });
                           setIsTemplateDropdownOpen(false);
                         }}
                         style={{
@@ -2424,9 +3008,12 @@ const SurveyBuilder = () => {
                           <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Single sheet. AI translates it.</span>
                         </div>
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
-                          downloadManualExcelTemplate();
+                          downloadManualExcelTemplate().catch(err => {
+                            console.error('Failed to generate Manual Excel template:', err);
+                            useNotificationStore.getState().showError('Failed to generate Manual Excel template: ' + err.message);
+                          });
                           setIsTemplateDropdownOpen(false);
                         }}
                         style={{
@@ -2456,114 +3043,140 @@ const SurveyBuilder = () => {
                   )}
                 </div>
                 
-                <label 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    fontSize: '0.85rem', 
-                    fontWeight: 700, 
-                    padding: '0 1.5rem', 
-                    borderRadius: '10px',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-main)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    height: '48px',
-                    margin: 0,
-                    boxSizing: 'border-box'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                    e.currentTarget.style.background = 'var(--bg-hover)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.background = 'var(--bg-card)';
-                  }}
-                  title="Upload standard English sheet for AI automatic translation"
-                >
-                  <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} /> Upload Automation
-                  <input 
-                    type="file" 
-                    accept=".xlsx, .xls"
-                    onChange={handleAutomationUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+                <div ref={uploadDropdownRef} style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setIsUploadDropdownOpen(!isUploadDropdownOpen)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      padding: '0 1.5rem',
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--bg-card)',
+                      border: `1.5px solid ${isUploadDropdownOpen ? 'var(--accent-primary)' : 'var(--border)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      height: '48px',
+                      color: 'var(--text-main)',
+                      boxSizing: 'border-box',
+                      boxShadow: isUploadDropdownOpen ? '0 0 0 3px rgba(76, 140, 228, 0.15)' : 'none'
+                    }}
+                  >
+                    <Upload size={16} />
+                    Upload Type
+                    <ChevronDown size={14} style={{
+                      transition: 'transform 0.2s',
+                      transform: isUploadDropdownOpen ? 'rotate(180deg)' : 'none'
+                    }} />
+                  </button>
+                  {isUploadDropdownOpen && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: '280px',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius)',
+                      boxShadow: 'var(--shadow)',
+                      zIndex: 1000,
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      animation: 'fade-in 0.15s ease-out'
+                    }}>
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: 'none',
+                          color: 'var(--text-main)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          margin: 0,
+                          boxSizing: 'border-box',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        title="Upload standard English sheet for AI automatic translation"
+                      >
+                        <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Upload Automation</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Single sheet. AI translates it.</span>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={(e) => { handleAutomationUpload(e); setIsUploadDropdownOpen(false); }}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
 
-                <label 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    fontSize: '0.85rem', 
-                    fontWeight: 700, 
-                    padding: '0 1.5rem', 
-                    borderRadius: '10px',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-main)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    height: '48px',
-                    margin: 0,
-                    boxSizing: 'border-box'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = '#10B981';
-                    e.currentTarget.style.background = 'var(--bg-hover)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.background = 'var(--bg-card)';
-                  }}
-                  title="Upload 13-sheet workbook with manual translations"
-                >
-                  <UserCheck size={16} style={{ color: '#10B981' }} /> Upload Manually
-                  <input 
-                    type="file" 
-                    accept=".xlsx, .xls"
-                    onChange={handleManualUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: 'none',
+                          color: 'var(--text-main)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          margin: 0,
+                          boxSizing: 'border-box',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        title="Upload 13-sheet workbook with manual translations"
+                      >
+                        <UserCheck size={16} style={{ color: '#10B981' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Upload Manually</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>13-sheet workbook, manual translations.</span>
+                        </div>
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          onChange={(e) => { handleManualUpload(e); setIsUploadDropdownOpen(false); }}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
               </>
             )}
             <button
               type="button"
-              onClick={() => {
-                setTranslationCompleted(false);
-                setTranslatedSurveyData(null);
-                setIsTranslationModalOpen(true);
-              }}
+              onClick={handleValidate}
+              title="Check the whole survey, then take it end to end"
               style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-main)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s'
+                display: 'flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.85rem', fontWeight: 700, padding: '0 1.25rem',
+                borderRadius: 'var(--radius)', background: 'rgba(16, 185, 129, 0.1)',
+                border: '1.5px solid #10b981', color: '#10b981',
+                cursor: 'pointer', transition: 'all 0.2s', height: '48px',
+                boxSizing: 'border-box', whiteSpace: 'nowrap',
               }}
-              title="Translate Survey"
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.background = 'var(--bg-hover)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.background = 'var(--bg-card)';
-              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'; e.currentTarget.style.color = '#10b981'; }}
             >
-              <Languages size={18} />
+              <Play size={16} style={{ flexShrink: 0 }} /> Validate &amp; Test
             </button>
-
             <button className="primary" disabled={saving} onClick={handleSave} style={{ height: '48px', padding: '0 2rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {saving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
               {isEditMode ? (saving ? 'Saving...' : 'Save Changes') : (saving ? 'Saving...' : 'Save')}
@@ -2574,20 +3187,21 @@ const SurveyBuilder = () => {
       <div className="panel" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
           <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>SURVEY TITLE</label>
-            <input 
-              value={title} 
-              onChange={e => setTitle(e.target.value)} 
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>SURVEY NAME <span style={{ color: '#ef4444' }}>*</span></label>
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Technical Skills Assessment"
               maxLength={60}
               title={title}
+              style={{ height: '46px', padding: '0 12px' }}
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>CATEGORY</label>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>SURVEY BRANCH <span style={{ color: '#ef4444' }}>*</span></label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <select 
+                <select
                   value={isNewBatch ? 'ADD_NEW' : category}
                   onChange={(e) => {
                     if (e.target.value === 'ADD_NEW') {
@@ -2598,7 +3212,7 @@ const SurveyBuilder = () => {
                       setCategory(e.target.value);
                     }
                   }}
-                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', width: '100%' }}
+                  style={{ height: '46px', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.9rem', width: '100%' }}
                 >
                   {allBatches.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -2606,12 +3220,12 @@ const SurveyBuilder = () => {
                   <option value="ADD_NEW" style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>+ Add New Category...</option>
                 </select>
                 {isNewBatch && (
-                  <input 
+                  <input
                     autoFocus
                     placeholder="Enter new category name..."
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-primary)' }}
+                    style={{ height: '46px', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--accent-primary)' }}
                   />
                 )}
               </div>
@@ -2630,10 +3244,13 @@ const SurveyBuilder = () => {
                       }
                     }
                   }}
-                  style={{ 
-                    padding: '12px', 
-                    background: 'rgba(239, 68, 68, 0.1)', 
-                    color: '#ef4444', 
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    padding: 0,
+                    flexShrink: 0,
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#ef4444',
                     border: '1px solid rgba(239, 68, 68, 0.2)',
                     borderRadius: '8px',
                     cursor: 'pointer',
@@ -2650,7 +3267,7 @@ const SurveyBuilder = () => {
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', color: 'var(--text-muted)' }}>SURVEY DESCRIPTION</label>
+          <label style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', color: 'var(--text-muted)' }}>SURVEY DESCRIPTION <span style={{ color: '#ef4444' }}>*</span></label>
           <textarea 
             value={description} 
             onChange={e => setDescription(e.target.value)} 
@@ -2660,47 +3277,246 @@ const SurveyBuilder = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Questions ({questions.length})</h3>
-        <button className="primary" onClick={addQuestion} style={{ fontSize: '0.85rem' }}>
-          <Plus size={18} /> Add Question
-        </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {questions.map((q, i) => {
+          // Rendered nested under its parent's branch block below — skip here
+          if (nestedChildIndexSet.has(i)) return null;
+
+          let content;
+
+          // ── Section divider card ──────────────────────────────────────
+          if (q._is_section || q.question_type === '_section') {
+            content = (
+              <div key={q.id || i} style={
+                {
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '0 4px',
+                }
+              }>
+                {/* Colored accent line */}
+                <div style={{
+                  width: '6px', height: '48px', borderRadius: '4px',
+                  background: 'linear-gradient(180deg,var(--accent-primary),rgba(99,102,241,0.25))',
+                  flexShrink: 0,
+                }} />
+                {/* Editable label */}
+                <input
+                  value={q.section_label || ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setQuestions(prev => prev.map((item, idx) =>
+                      idx === i ? { ...item, section_label: val } : item
+                    ));
+                  }}
+                  placeholder="Section name (e.g. Self, General, Family)..."
+                  style={{
+                    flexGrow: 1,
+                    height: '48px',
+                    fontWeight: 800,
+                    fontSize: '1rem',
+                    letterSpacing: '0.02em',
+                    borderRadius: '10px',
+                    border: '2px dashed var(--border)',
+                    background: 'var(--bg-card)',
+                    padding: '0 16px',
+                    color: 'var(--accent-primary)',
+                  }}
+                />
+                {/* Question count badge between prev section and this */}
+                <div style={{
+                  padding: '4px 12px',
+                  borderRadius: '999px',
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid var(--accent-primary)',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: 'var(--accent-primary)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}>
+                  {(() => {
+                    // Count real questions between previous section and this one
+                    let count = 0;
+                    for (let j = i - 1; j >= 0; j--) {
+                      if (questions[j]._is_section || questions[j].question_type === '_section') break;
+                      count++;
+                    }
+                    return count > 0 ? `${count} Q above` : 'Section start';
+                  })()}
+                </div>
+                {/* Remove section */}
+                <button
+                  onClick={() => setQuestions(prev => prev.filter((_, idx) => idx !== i))}
+                  title="Remove Section"
+                  style={{
+                    padding: '8px', background: 'none', border: 'none',
+                    color: '#ef4444', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            );
+          } else {
+            // ── Real question card (+ nested branch of tier 2-5 follow-ups) ──
+            content = renderQuestionBlock(i);
+          }
+
+          const isDropBefore = dropTarget?.index === i && dropTarget.position === 'before' && dragIndex !== i;
+          const isDropAfter = dropTarget?.index === i && dropTarget.position === 'after' && dragIndex !== i;
+
+          return (
+            <div
+              key={`drag-row-${q.id || i}`}
+              draggable
+              onDragStart={(e) => {
+                setDragIndex(i);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(i));
+              }}
+              onDragEnd={() => { setDragIndex(null); setDropTarget(null); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragIndex === null || dragIndex === i) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const position = (e.clientY - rect.top) < rect.height / 2 ? 'before' : 'after';
+                setDropTarget({ index: i, position });
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== i) {
+                  reorderQuestions(dragIndex, dropTarget?.position === 'after' ? i + 1 : i);
+                }
+                setDragIndex(null);
+                setDropTarget(null);
+              }}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}
+            >
+              <div
+                title="Drag to reorder or move to another section"
+                style={{
+                  cursor: dragIndex === i ? 'grabbing' : 'grab',
+                  color: 'var(--text-muted)',
+                  paddingTop: '14px',
+                  flexShrink: 0,
+                  opacity: dragIndex === i ? 0.4 : 0.6,
+                }}
+              >
+                <GripVertical size={18} />
+              </div>
+              <div style={{
+                flex: 1,
+                minWidth: 0,
+                borderTop: isDropBefore ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                borderBottom: isDropAfter ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                opacity: dragIndex === i ? 0.4 : 1,
+                transition: 'opacity 0.15s, border-color 0.15s',
+              }}>
+                {content}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {questions.map((q, i) => (
-          <QuestionCard 
-            key={q.id || i}
-            q={q}
-            i={i}
-            total={questions.length}
-            questions={questions}
-            updateQuestion={updateQuestion}
-            updateQuestionMultiple={updateQuestionMultiple}
-            removeQuestion={removeQuestion}
-            duplicateQuestion={duplicateQuestion}
-            moveQuestion={moveQuestion}
-            addOption={addOption}
-            updateOption={updateOption}
-            autoAssignScores={autoAssignScores}
-            openPreview={openPreview}
-            removeOption={removeOption}
-          />
-        ))}
-      </div>
+      {questions.length === 0 && (
+        <div className="panel" style={{
+          padding: '1.75rem 2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '0.75rem',
+          border: '1px dashed var(--border)'
+        }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'rgba(var(--accent-primary-rgb), 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent-primary)'
+          }}>
+            <ClipboardList size={26} />
+          </div>
+          <div style={{ fontWeight: 700, fontSize: '1rem' }}>No questions yet</div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '420px', margin: 0 }}>
+            Add your first question to start building the survey. Choose from short text, multiple choice, ratings, and more.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '0.75rem' }}>
+            <button
+              onClick={() => addSection()}
+              style={{
+                height: '44px', 
+                padding: '0 1.5rem', 
+                borderRadius: '10px',
+                background: 'rgba(76, 140, 228, 0.08)', 
+                border: '1px solid var(--accent-primary)',
+                color: 'var(--accent-primary)', 
+                fontWeight: 700, 
+                fontSize: '0.85rem',
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(76, 140, 228, 0.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(76, 140, 228, 0.08)'; }}
+            >
+              <Plus size={16} /> Add Section
+            </button>
+            <button
+              className="primary"
+              onClick={addQuestion}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 1.5rem', height: '44px', borderRadius: '10px' }}
+            >
+              <Plus size={16} /> Add First Question
+            </button>
+          </div>
+        </div>
+      )}
 
       {questions.length > 0 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button 
-              className="primary" 
-              onClick={addQuestion} 
-              style={{ 
-                padding: '12px 24px', 
-                fontSize: '0.9rem', 
-                fontWeight: 700, 
-                display: 'flex', 
-                alignItems: 'center', 
+            <button
+              onClick={() => addSection()}
+              style={{
+                height: '48px',
+                padding: '0 1.5rem',
+                borderRadius: '10px',
+                background: 'rgba(76, 140, 228, 0.08)',
+                border: '1px solid var(--accent-primary)',
+                color: 'var(--accent-primary)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(76, 140, 228, 0.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(76, 140, 228, 0.08)'; }}
+            >
+              <Plus size={16} /> Add Section
+            </button>
+            <button
+              className="primary"
+              onClick={addQuestion}
+              style={{
+                padding: '12px 24px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
                 gap: '8px',
                 borderRadius: '10px',
                 boxShadow: '0 4px 15px rgba(99, 102, 241, 0.2)'
@@ -2708,42 +3524,9 @@ const SurveyBuilder = () => {
             >
               <Plus size={18} /> Add Question
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setTranslationCompleted(false);
-                setTranslatedSurveyData(null);
-                setIsTranslationModalOpen(true);
-              }}
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-main)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.background = 'var(--bg-hover)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.background = 'var(--bg-card)';
-              }}
-            >
-              T
-            </button>
           </div>
 
-          <button 
+          <button
             className="primary" 
             disabled={saving} 
             onClick={handleSave} 
@@ -2794,6 +3577,18 @@ const SurveyBuilder = () => {
     {renderPreview()}
     {renderTranslationModal()}
     {renderUploadPreviewModal()}
+    <ValidationReportModal
+      result={validationResult}
+      onClose={() => setValidationResult(null)}
+      onStartTest={handleStartTestMode}
+    />
+    {isTestModeOpen && testModeQuestions && (
+      <SurveyForm
+        draftQuestions={testModeQuestions}
+        draftTitle={title}
+        onClosePreview={() => setIsTestModeOpen(false)}
+      />
+    )}
     </div>
   );
 };

@@ -1,0 +1,26 @@
+- generic [ref=f22e3]:
+  - complementary [ref=f22e4]:
+    - generic [ref=f22e6]:
+      - generic [ref=f22e7]:
+        - generic [ref=f22e8]: SF
+        - generic [ref=f22e9]: SurveyFlow
+      - button [ref=f22e10] [cursor=pointer]
+    - navigation [ref=f22e14]:
+      - link "Dashboard" [ref=f22e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f22e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f22e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f22e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f22e48]:
+    - banner [ref=f22e49]:
+      - generic [ref=f22e51]:
+        - button "Notifications" [ref=f22e53] [cursor=pointer]
+        - generic [ref=f22e59] [cursor=pointer]:
+          - generic [ref=f22e60]: AD
+          - generic [ref=f22e61]:
+            - generic [ref=f22e62]: Admin User
+            - generic [ref=f22e63]: Admin
+    - main [ref=f22e66]

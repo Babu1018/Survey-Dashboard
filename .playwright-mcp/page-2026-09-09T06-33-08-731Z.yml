@@ -1,0 +1,195 @@
+- generic [ref=f25e3]:
+  - complementary [ref=f25e4]:
+    - generic [ref=f25e6]:
+      - generic [ref=f25e7]:
+        - generic [ref=f25e8]: SF
+        - generic [ref=f25e9]: SurveyFlow
+      - button [ref=f25e10] [cursor=pointer]
+    - navigation [ref=f25e14]:
+      - link "Dashboard" [ref=f25e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f25e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f25e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f25e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f25e48]:
+    - banner [ref=f25e49]:
+      - generic [ref=f25e51]:
+        - button "Notifications" [ref=f25e53] [cursor=pointer]
+        - generic [ref=f25e59] [cursor=pointer]:
+          - generic [ref=f25e60]: AD
+          - generic [ref=f25e61]:
+            - generic [ref=f25e62]: Admin User
+            - generic [ref=f25e63]: Admin
+    - main [ref=f25e66]:
+      - generic [ref=f25e68]:
+        - generic [ref=f25e69]:
+          - generic [ref=f25e71]:
+            - button "Back" [ref=f25e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f25e76]
+          - generic [ref=f25e77]:
+            - button "Download Template" [ref=f25e79] [cursor=pointer]
+            - button "Upload Type" [ref=f25e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f25e93] [cursor=pointer]
+            - button "Save" [ref=f25e96] [cursor=pointer]
+        - generic [ref=f25e101]:
+          - generic [ref=f25e102]:
+            - generic [ref=f25e103]:
+              - generic [ref=f25e104]: SURVEY NAME *
+              - textbox "Grid Layout Check" [ref=f25e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f25e106]:
+              - generic [ref=f25e107]: SURVEY BRANCH *
+              - generic [ref=f25e108]:
+                - combobox [ref=f25e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f25e111] [cursor=pointer]
+          - generic [ref=f25e115]:
+            - generic [ref=f25e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f25e117]: Checks the grid column proportions against the reference layout.
+        - generic [ref=f25e132]:
+          - generic "Drag to reorder or move to another section" [ref=f25e133]
+          - generic [ref=f25e143]:
+            - generic [ref=f25e144]:
+              - generic [ref=f25e145]:
+                - generic [ref=f25e146]: "1"
+                - generic [ref=f25e147]: NEW QUESTION
+              - generic [ref=f25e148]:
+                - button "Question Options" [ref=f25e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f25e155] [cursor=pointer]
+                - button [ref=f25e159] [cursor=pointer]
+            - generic [ref=f25e163]:
+              - generic [ref=f25e164]:
+                - generic [ref=f25e165]:
+                  - generic [ref=f25e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f25e167]: "Please say how much do you agree or disagree with the following statements:"
+                - generic [ref=f25e168]:
+                  - generic [ref=f25e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f25e171] [cursor=pointer]
+              - generic [ref=f25e173]:
+                - generic [ref=f25e175]:
+                  - generic [ref=f25e176]: ANSWER TYPE *
+                  - combobox [ref=f25e177]:
+                    - option "Short Text Answer"
+                    - option "Paragraph Answer"
+                    - option "Number Input"
+                    - option "Phone Number (10 digits)"
+                    - option "Single Choice (Radio Buttons)"
+                    - option "Multiple Choice (Checkboxes)"
+                    - option "Rating Scale"
+                    - option "Ranking (Drag to Order)"
+                    - option "Matrix / Grid" [selected]
+                    - option "Media Upload"
+                - generic [ref=f25e190]:
+                  - generic [ref=f25e191]:
+                    - generic [ref=f25e192]: MATRIX / GRID SETTINGS
+                    - generic [ref=f25e193] [cursor=pointer]:
+                      - checkbox "Allow multiple answers per row (checkbox grid)" [ref=f25e194]
+                      - text: Allow multiple answers per row (checkbox grid)
+                  - generic [ref=f25e195]:
+                    - generic [ref=f25e196]:
+                      - generic [ref=f25e197]: Rows — statements (4), one per line
+                      - textbox "Product Quality Customer Service Support Pricing" [ref=f25e198]:
+                        - /placeholder: "Product Quality\nCustomer Service\nSupport\nPricing"
+                        - text: I like to be the first one to try a new product. I want to read lots of reviews before buying a product. I generally stick with products from brands I know well. I am willing to experiment with brands I do not know well.
+                    - generic [ref=f25e199]:
+                      - generic [ref=f25e200]:
+                        - generic [ref=f25e201]: Columns — choices (5), one per line
+                        - button "Very Bad…Very Good" [ref=f25e202] [cursor=pointer]
+                        - button "Very Dissatisfied…Very Satisfied" [ref=f25e203] [cursor=pointer]
+                      - textbox "Very Bad Bad Average Good Very Good" [ref=f25e204]:
+                        - /placeholder: "Very Bad\nBad\nAverage\nGood\nVery Good"
+                        - text: Strongly disagree Disagree Neutral Agree Strongly agree
+                  - generic [ref=f25e205]: Respondents will answer 4 rows against 5 choices, picking one per row.
+        - generic [ref=f25e178]:
+          - generic [ref=f25e179]:
+            - button "Add Section" [ref=f25e180] [cursor=pointer]
+            - button "Add Question" [ref=f25e182] [cursor=pointer]
+          - button "Save" [ref=f25e184] [cursor=pointer]
+        - generic [ref=f25e286]:
+          - generic [ref=f25e257]:
+            - generic [ref=f25e258]:
+              - button "Exit Test" [ref=f25e259] [cursor=pointer]
+              - generic "This is a dry run of the survey. Nothing is saved." [ref=f25e262]: Test Mode — nothing is saved
+            - generic [ref=f25e267]:
+              - generic [ref=f25e268]: A
+              - generic [ref=f25e269]:
+                - generic [ref=f25e270]: admin
+                - generic [ref=f25e271]: Admin
+          - generic [ref=f25e273]:
+            - generic [ref=f25e288]:
+              - generic [ref=f25e289]: Question 1 of 1
+              - generic [ref=f25e290]: 100%
+            - generic [ref=f25e293]:
+              - generic [ref=f25e294]:
+                - generic [ref=f25e295]:
+                  - generic [ref=f25e296]: "1"
+                  - generic [ref=f25e297]: Please say how much do you agree or disagree with the following statements:*
+                - table [ref=f25e299]:
+                  - rowgroup [ref=f25e300]:
+                    - row [ref=f25e301]:
+                      - columnheader [ref=f25e302]
+                      - columnheader "Strongly disagree" [ref=f25e303]
+                      - columnheader "Disagree" [ref=f25e304]
+                      - columnheader "Neutral" [ref=f25e305]
+                      - columnheader "Agree" [ref=f25e306]
+                      - columnheader "Strongly agree" [ref=f25e307]
+                  - rowgroup [ref=f25e308]:
+                    - row [ref=f25e309]:
+                      - cell "I like to be the first one to try a new product." [ref=f25e310]
+                      - cell [ref=f25e311]:
+                        - 'radio "I like to be the first one to try a new product.: Strongly disagree" [ref=f25e312] [cursor=pointer]'
+                      - cell [ref=f25e313]:
+                        - 'radio "I like to be the first one to try a new product.: Disagree" [ref=f25e314] [cursor=pointer]'
+                      - cell [ref=f25e315]:
+                        - 'radio "I like to be the first one to try a new product.: Neutral" [ref=f25e316] [cursor=pointer]'
+                      - cell [ref=f25e317]:
+                        - 'radio "I like to be the first one to try a new product.: Agree" [ref=f25e318] [cursor=pointer]'
+                      - cell [ref=f25e319]:
+                        - 'radio "I like to be the first one to try a new product.: Strongly agree" [ref=f25e320] [cursor=pointer]'
+                    - row [ref=f25e321]:
+                      - cell "I want to read lots of reviews before buying a product." [ref=f25e322]
+                      - cell [ref=f25e323]:
+                        - 'radio "I want to read lots of reviews before buying a product.: Strongly disagree" [ref=f25e324] [cursor=pointer]'
+                      - cell [ref=f25e325]:
+                        - 'radio "I want to read lots of reviews before buying a product.: Disagree" [ref=f25e326] [cursor=pointer]'
+                      - cell [ref=f25e327]:
+                        - 'radio "I want to read lots of reviews before buying a product.: Neutral" [ref=f25e328] [cursor=pointer]'
+                      - cell [ref=f25e329]:
+                        - 'radio "I want to read lots of reviews before buying a product.: Agree" [ref=f25e330] [cursor=pointer]'
+                      - cell [ref=f25e331]:
+                        - 'radio "I want to read lots of reviews before buying a product.: Strongly agree" [ref=f25e332] [cursor=pointer]'
+                    - row [ref=f25e333]:
+                      - cell "I generally stick with products from brands I know well." [ref=f25e334]
+                      - cell [ref=f25e335]:
+                        - 'radio "I generally stick with products from brands I know well.: Strongly disagree" [ref=f25e336] [cursor=pointer]'
+                      - cell [ref=f25e337]:
+                        - 'radio "I generally stick with products from brands I know well.: Disagree" [ref=f25e338] [cursor=pointer]'
+                      - cell [ref=f25e339]:
+                        - 'radio "I generally stick with products from brands I know well.: Neutral" [ref=f25e340] [cursor=pointer]'
+                      - cell [ref=f25e341]:
+                        - 'radio "I generally stick with products from brands I know well.: Agree" [ref=f25e342] [cursor=pointer]'
+                      - cell [ref=f25e343]:
+                        - 'radio "I generally stick with products from brands I know well.: Strongly agree" [ref=f25e344] [cursor=pointer]'
+                    - row [ref=f25e345]:
+                      - cell "I am willing to experiment with brands I do not know well." [ref=f25e346]
+                      - cell [ref=f25e347]:
+                        - 'radio "I am willing to experiment with brands I do not know well.: Strongly disagree" [ref=f25e348] [cursor=pointer]'
+                      - cell [ref=f25e349]:
+                        - 'radio "I am willing to experiment with brands I do not know well.: Disagree" [ref=f25e350] [cursor=pointer]'
+                      - cell [ref=f25e351]:
+                        - 'radio "I am willing to experiment with brands I do not know well.: Neutral" [ref=f25e352] [cursor=pointer]'
+                      - cell [ref=f25e353]:
+                        - 'radio "I am willing to experiment with brands I do not know well.: Agree" [ref=f25e354] [cursor=pointer]'
+                      - cell [ref=f25e355]:
+                        - 'radio "I am willing to experiment with brands I do not know well.: Strongly agree" [ref=f25e356] [cursor=pointer]'
+              - generic [ref=f25e359]:
+                - button "Back" [ref=f25e360] [cursor=pointer]
+                - button "Review & Finish" [ref=f25e363] [cursor=pointer]
+              - paragraph [ref=f25e366]: 0 of 1 answered • This question is required to continue

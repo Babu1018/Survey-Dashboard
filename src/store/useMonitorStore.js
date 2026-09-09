@@ -1,26 +1,54 @@
 import { create } from 'zustand';
 import useAuthStore from './useAuthStore';
+import { WS_API } from '../config/api';
+import * as monitorService from '../services/monitorService';
 
-const API = 'http://localhost:8000';
 
-const useMonitorStore = create((set) => ({
+const useMonitorStore = create((set, get) => ({
   recentResponses: [],
   socket: null,
   connected: false,
+  // Which respondents this account is allowed to see: Admin sees everyone
+  // (scopeAll: true); a Manager only sees users in the groups they manage.
+  scopeAll: true,
+  scopeUserIds: new Set(),
 
-  fetchRecent: async () => {
+  fetchRecent: async (limit = 50) => {
+    const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/monitor/recent`);
-      const data = await response.json();
+      const data = await monitorService.fetchRecent(token, limit);
       set({ recentResponses: data });
     } catch (error) {
       console.error("Failed to fetch recent responses", error);
     }
   },
 
+  managersOverview: [],
+
+  fetchManagersOverview: async () => {
+    const { token } = useAuthStore.getState();
+    try {
+      const data = await monitorService.fetchManagersOverview(token);
+      set({ managersOverview: data });
+    } catch (error) {
+      console.error("Failed to fetch managers overview", error);
+    }
+  },
+
+  fetchScope: async () => {
+    const { token } = useAuthStore.getState();
+    try {
+      const data = await monitorService.fetchScope(token);
+      set({ scopeAll: !!data.all, scopeUserIds: new Set(data.user_ids || []) });
+    } catch (error) {
+      console.error("Failed to fetch report scope", error);
+    }
+  },
+
   connectWebSocket: () => {
-    const ws = new WebSocket('ws://localhost:8000/api/monitor/ws');
-    
+    get().fetchScope();
+    const ws = new WebSocket(`${WS_API}/api/monitor/ws`);
+
     ws.onopen = () => {
       console.log("WebSocket connected");
       set({ socket: ws, connected: true });
@@ -29,6 +57,8 @@ const useMonitorStore = create((set) => ({
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'NEW_RESPONSE') {
+        const { scopeAll, scopeUserIds } = get();
+        if (!scopeAll && !scopeUserIds.has(message.data.user_id)) return;
         set((state) => ({
           recentResponses: [message.data, ...state.recentResponses].slice(0, 50)
         }));
@@ -51,9 +81,9 @@ const useMonitorStore = create((set) => ({
   },
 
   fetchResponseDetail: async (id) => {
+    const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/monitor/responses/${id}`);
-      return await response.json();
+      return await monitorService.fetchResponseDetail(token, id);
     } catch (error) {
       console.error("Failed to fetch response detail", error);
       return null;
@@ -63,14 +93,7 @@ const useMonitorStore = create((set) => ({
   deleteResponse: async (id) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/monitor/responses/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to delete response');
-      }
+      await monitorService.deleteResponse(token, id);
       set((state) => ({
         recentResponses: state.recentResponses.filter(r => r.id !== id)
       }));
@@ -84,19 +107,7 @@ const useMonitorStore = create((set) => ({
   bulkDeleteResponses: async (ids) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/monitor/responses/bulk-delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ ids }),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to delete responses');
-      }
-      const result = await response.json();
+      const result = await monitorService.bulkDeleteResponses(token, ids);
       set((state) => ({
         recentResponses: state.recentResponses.filter(r => !ids.includes(r.id))
       }));
@@ -106,23 +117,11 @@ const useMonitorStore = create((set) => ({
       throw error;
     }
   },
-  
-  updateResponseStatus: async (id, status) => {
+
+  updateResponseStatus: async (id, status, comment = null) => {
     const { token } = useAuthStore.getState();
     try {
-      const response = await fetch(`${API}/api/monitor/responses/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || 'Failed to update status');
-      }
-      const updated = await response.json();
+      const updated = await monitorService.updateResponseStatus(token, id, status, comment);
       set((state) => ({
         recentResponses: state.recentResponses.map(r => r.id === id ? { ...r, status: updated.status } : r)
       }));
@@ -131,6 +130,20 @@ const useMonitorStore = create((set) => ({
       console.error("Failed to update status", error);
       throw error;
     }
+  },
+
+  // Approve or decline one answer inside a submission. The backend rolls the
+  // per-answer decisions up into the parent submission's status and returns
+  // it, so the recent feed is kept in step here.
+  updateAnswerStatus: async (responseId, answerId, status, note = null) => {
+    const { token } = useAuthStore.getState();
+    const updated = await monitorService.updateAnswerStatus(token, answerId, status, note);
+    set((state) => ({
+      recentResponses: state.recentResponses.map(
+        r => r.id === responseId ? { ...r, status: updated.response_status } : r
+      )
+    }));
+    return updated;
   }
 }));
 

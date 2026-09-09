@@ -1,4 +1,6 @@
 import os
+import secrets
+import string
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import JWTError, jwt
@@ -24,6 +26,9 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+def generate_otp(length: int = 6) -> str:
+    return "".join(secrets.choice(string.digits) for _ in range(length))
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

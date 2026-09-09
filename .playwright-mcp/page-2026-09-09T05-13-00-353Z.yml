@@ -1,0 +1,212 @@
+- generic [ref=f19e3]:
+  - complementary [ref=f19e4]:
+    - generic [ref=f19e6]:
+      - generic [ref=f19e7]:
+        - generic [ref=f19e8]: SF
+        - generic [ref=f19e9]: SurveyFlow
+      - button [ref=f19e10] [cursor=pointer]
+    - navigation [ref=f19e14]:
+      - link "Dashboard" [ref=f19e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f19e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f19e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f19e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f19e48]:
+    - banner [ref=f19e49]:
+      - generic [ref=f19e51]:
+        - button "Notifications" [ref=f19e53] [cursor=pointer]
+        - generic [ref=f19e59] [cursor=pointer]:
+          - generic [ref=f19e60]: AD
+          - generic [ref=f19e61]:
+            - generic [ref=f19e62]: Admin User
+            - generic [ref=f19e63]: Admin
+    - main [ref=f19e66]:
+      - generic [ref=f19e68]:
+        - generic [ref=f19e69]:
+          - generic [ref=f19e71]:
+            - button "Back" [ref=f19e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f19e76]
+          - generic [ref=f19e77]:
+            - button "Download Template" [ref=f19e79] [cursor=pointer]
+            - button "Upload Type" [ref=f19e87] [cursor=pointer]
+            - button "Validate & Test" [ref=f19e93] [cursor=pointer]
+            - button "Save" [ref=f19e96] [cursor=pointer]
+        - generic [ref=f19e101]:
+          - generic [ref=f19e102]:
+            - generic [ref=f19e103]:
+              - generic [ref=f19e104]: SURVEY NAME *
+              - textbox "Brand Attitudes Survey" [ref=f19e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f19e106]:
+              - generic [ref=f19e107]: SURVEY BRANCH *
+              - generic [ref=f19e108]:
+                - combobox [ref=f19e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f19e111] [cursor=pointer]
+          - generic [ref=f19e115]:
+            - generic [ref=f19e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f19e117]: Measures attitudes towards trying new products and staying with familiar brands.
+        - generic [ref=f19e132]:
+          - generic "Drag to reorder or move to another section" [ref=f19e133]
+          - generic [ref=f19e143]:
+            - generic [ref=f19e144]:
+              - generic [ref=f19e145]:
+                - generic [ref=f19e146]: "1"
+                - generic [ref=f19e147]: NEW QUESTION
+              - generic [ref=f19e148]:
+                - button "Question Options" [ref=f19e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f19e155] [cursor=pointer]
+                - button [ref=f19e159] [cursor=pointer]
+            - generic [ref=f19e163]:
+              - generic [ref=f19e164]:
+                - generic [ref=f19e165]:
+                  - generic [ref=f19e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f19e167]: I like to be the first one to try a new product.
+                - generic [ref=f19e168]:
+                  - generic [ref=f19e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f19e171] [cursor=pointer]
+              - generic [ref=f19e173]:
+                - generic [ref=f19e174]:
+                  - generic [ref=f19e175]:
+                    - generic [ref=f19e176]: ANSWER TYPE *
+                    - combobox [ref=f19e177]:
+                      - option "Short Text Answer"
+                      - option "Paragraph Answer"
+                      - option "Number Input"
+                      - option "Phone Number (10 digits)"
+                      - option "Single Choice (Radio Buttons)" [selected]
+                      - option "Multiple Choice (Checkboxes)"
+                      - option "Rating Scale"
+                      - option "Ranking (Drag to Order)"
+                      - option "Matrix / Grid"
+                      - option "Media Upload"
+                  - generic [ref=f19e528]:
+                    - generic [ref=f19e529]: Choice Options
+                    - button "Add Option" [ref=f19e530] [cursor=pointer]
+                - generic [ref=f19e533]:
+                  - generic [ref=f19e534]:
+                    - generic [ref=f19e535]:
+                      - textbox "Choice 1 text..." [ref=f19e536]: Strongly disagree
+                      - button "Remove Choice" [ref=f19e537] [cursor=pointer]
+                    - generic [ref=f19e541]:
+                      - generic [ref=f19e542]:
+                        - generic [ref=f19e543]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f19e544]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f19e545] [cursor=pointer]
+                      - generic [ref=f19e546]:
+                        - generic [ref=f19e547]: Media
+                        - button "Add images or audio" [ref=f19e549] [cursor=pointer]
+                  - generic [ref=f19e551]:
+                    - generic [ref=f19e552]:
+                      - textbox "Choice 2 text..." [ref=f19e553]: Disagree
+                      - button "Remove Choice" [ref=f19e554] [cursor=pointer]
+                    - generic [ref=f19e558]:
+                      - generic [ref=f19e559]:
+                        - generic [ref=f19e560]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f19e561]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f19e562] [cursor=pointer]
+                      - generic [ref=f19e563]:
+                        - generic [ref=f19e564]: Media
+                        - button "Add images or audio" [ref=f19e566] [cursor=pointer]
+                  - generic [ref=f19e568]:
+                    - generic [ref=f19e569]:
+                      - textbox "Choice 3 text..." [ref=f19e570]: Neutral
+                      - button "Remove Choice" [ref=f19e571] [cursor=pointer]
+                    - generic [ref=f19e575]:
+                      - generic [ref=f19e576]:
+                        - generic [ref=f19e577]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f19e578]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f19e579] [cursor=pointer]
+                      - generic [ref=f19e580]:
+                        - generic [ref=f19e581]: Media
+                        - button "Add images or audio" [ref=f19e583] [cursor=pointer]
+                  - generic [ref=f19e585]:
+                    - generic [ref=f19e586]:
+                      - textbox "Choice 4 text..." [ref=f19e587]: Agree
+                      - button "Remove Choice" [ref=f19e588] [cursor=pointer]
+                    - generic [ref=f19e592]:
+                      - generic [ref=f19e593]:
+                        - generic [ref=f19e594]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f19e595]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f19e596] [cursor=pointer]
+                      - generic [ref=f19e597]:
+                        - generic [ref=f19e598]: Media
+                        - button "Add images or audio" [ref=f19e600] [cursor=pointer]
+                  - generic [ref=f19e602]:
+                    - generic [ref=f19e603]:
+                      - textbox "Choice 5 text..." [ref=f19e604]: Strongly agree
+                      - button "Remove Choice" [ref=f19e605] [cursor=pointer]
+                    - generic [ref=f19e609]:
+                      - generic [ref=f19e610]:
+                        - generic [ref=f19e611]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f19e612]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f19e613] [cursor=pointer]
+                      - generic [ref=f19e614]:
+                        - generic [ref=f19e615]: Media
+                        - button "Add images or audio" [ref=f19e617] [cursor=pointer]
+        - generic [ref=f19e178]:
+          - generic [ref=f19e179]:
+            - button "Add Section" [ref=f19e180] [cursor=pointer]
+            - button "Add Question" [ref=f19e182] [cursor=pointer]
+          - button "Save" [ref=f19e184] [cursor=pointer]
+        - generic [ref=f19e669]:
+          - generic [ref=f19e671]:
+            - generic [ref=f19e672]:
+              - button "Exit Test" [ref=f19e673] [cursor=pointer]
+              - generic "This is a dry run of the survey. Nothing is saved." [ref=f19e676]: Test Mode — nothing is saved
+            - generic [ref=f19e681]:
+              - generic [ref=f19e682]: A
+              - generic [ref=f19e683]:
+                - generic [ref=f19e684]: admin
+                - generic [ref=f19e685]: Admin
+          - generic [ref=f19e687]:
+            - generic [ref=f19e701]:
+              - generic [ref=f19e702]: Question 1 of 1
+              - generic [ref=f19e703]: 100%
+            - generic [ref=f19e706]:
+              - generic [ref=f19e707]:
+                - generic [ref=f19e708]:
+                  - generic [ref=f19e709]: "1"
+                  - generic [ref=f19e710]: I like to be the first one to try a new product.*
+                - generic [ref=f19e711]:
+                  - generic [ref=f19e713] [cursor=pointer]:
+                    - radio "Strongly disagree" [ref=f19e714]
+                    - generic [ref=f19e715]: Strongly disagree
+                  - generic [ref=f19e717] [cursor=pointer]:
+                    - radio "Disagree" [ref=f19e718]
+                    - generic [ref=f19e719]: Disagree
+                  - generic [ref=f19e721] [cursor=pointer]:
+                    - radio "Neutral" [ref=f19e722]
+                    - generic [ref=f19e723]: Neutral
+                  - generic [ref=f19e725] [cursor=pointer]:
+                    - radio "Agree" [ref=f19e726]
+                    - generic [ref=f19e727]: Agree
+                  - generic [ref=f19e729] [cursor=pointer]:
+                    - radio "Strongly agree" [ref=f19e730]
+                    - generic [ref=f19e731]: Strongly agree
+              - generic [ref=f19e734]:
+                - button "Back" [ref=f19e735] [cursor=pointer]
+                - button "Review & Finish" [ref=f19e738] [cursor=pointer]
+              - paragraph [ref=f19e741]: 0 of 1 answered • This question is required to continue

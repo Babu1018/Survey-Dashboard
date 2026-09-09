@@ -1,0 +1,78 @@
+- generic [ref=f6e3]:
+  - complementary [ref=f6e4]:
+    - generic [ref=f6e6]:
+      - generic [ref=f6e7]:
+        - generic [ref=f6e8]: SF
+        - generic [ref=f6e9]: SurveyFlow
+      - button [ref=f6e10] [cursor=pointer]
+    - navigation [ref=f6e14]:
+      - link "Dashboard" [ref=f6e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f6e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f6e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f6e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f6e48]:
+    - banner [ref=f6e49]:
+      - generic [ref=f6e51]:
+        - button "Notifications" [ref=f6e53] [cursor=pointer]
+        - generic [ref=f6e59] [cursor=pointer]:
+          - generic [ref=f6e60]: AD
+          - generic [ref=f6e61]:
+            - generic [ref=f6e62]: Admin User
+            - generic [ref=f6e63]: Admin
+    - main [ref=f6e66]:
+      - generic [ref=f6e68]:
+        - generic [ref=f6e71]:
+          - generic [ref=f6e72]:
+            - heading "Branches" [level=1] [ref=f6e73]
+            - paragraph [ref=f6e74]: Click any branch row to drill into credential user performance.
+          - button "New Survey" [ref=f6e76] [cursor=pointer]
+        - generic [ref=f6e80]:
+          - generic [ref=f6e81]:
+            - heading "Total Credential Users" [level=4] [ref=f6e83]
+            - generic [ref=f6e90]: "4"
+            - generic [ref=f6e91]: 1 Admin · 1 Manager · 2 Users
+          - generic [ref=f6e92]:
+            - heading "Total Survey Branches" [level=4] [ref=f6e94]
+            - generic [ref=f6e98]: "2"
+          - generic [ref=f6e99]:
+            - heading "Surveys In Progress" [level=4] [ref=f6e101]
+            - generic [ref=f6e106]: "3"
+          - generic [ref=f6e107]:
+            - heading "Total Responses" [level=4] [ref=f6e109]
+            - generic [ref=f6e114]: "0"
+        - generic [ref=f6e117]:
+          - heading "Performance" [level=3] [ref=f6e119]
+          - generic [ref=f6e121]:
+            - generic [ref=f6e122]:
+              - generic [ref=f6e123]: Branch Name
+              - generic [ref=f6e124]: Users
+              - generic [ref=f6e125]: Surveys
+              - generic [ref=f6e126]: Responses
+              - generic [ref=f6e127]: Created on
+              - generic [ref=f6e128]: Actions
+            - generic [ref=f6e129] [cursor=pointer]:
+              - generic [ref=f6e136]:
+                - generic [ref=f6e137]: AI
+                - generic [ref=f6e138]: Survey Category
+              - generic [ref=f6e139]: "1"
+              - generic [ref=f6e140]: "1"
+              - generic [ref=f6e141]: "0"
+              - generic [ref=f6e142]: 2026-09-08
+              - generic [ref=f6e143]:
+                - button "View AI" [ref=f6e144]
+                - button "Delete AI" [ref=f6e148]
+            - generic [ref=f6e152] [cursor=pointer]:
+              - generic [ref=f6e158]:
+                - generic [ref=f6e159]: prison
+                - generic [ref=f6e160]: Survey Category
+              - generic [ref=f6e161]: "1"
+              - generic [ref=f6e162]: "2"
+              - generic [ref=f6e163]: "0"
+              - generic [ref=f6e164]: 2026-08-31
+              - generic [ref=f6e165]:
+                - button "View prison" [ref=f6e166]
+                - button "Delete prison" [ref=f6e170]

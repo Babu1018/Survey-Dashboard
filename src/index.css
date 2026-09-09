@@ -89,6 +89,30 @@ h4 {
   font-size: clamp(14px, 1vw, 18px);
 }
 
+/* ─── Hero Banner ────────────────────────────────────────── */
+.hero-banner {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  padding: clamp(1.75rem, 3vw, 2.75rem) clamp(1.5rem, 3vw, 3rem);
+  background-image: url("./assets/hero-banner-gradient.png");
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+  background-color: #0b1560;
+}
+
+.hero-banner h1,
+.hero-banner p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+.hero-banner p {
+  margin-top: 0.4rem;
+}
+
 /* ─── Page Header ────────────────────────────────────────── */
 .page-header-container {
   display: flex;
@@ -215,16 +239,22 @@ input:focus {
 }
 
 aside {
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border);
+  background-image: url("./assets/sidebar-gradient.png");
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-color: #0a1242;
+  color: rgba(255, 255, 255, 0.85);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: clamp(1rem, 1.5vw, 2rem) 1rem;
   display: flex;
   flex-direction: column;
+  position: relative;
   z-index: 50;
   height: 100%;
   overflow: hidden;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.02);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
 }
 
 aside nav {
@@ -232,6 +262,20 @@ aside nav {
   flex-direction: column;
   gap: 8px;
   flex-grow: 1;
+}
+
+aside .nav-item {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+aside .nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+aside .nav-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
 aside.collapsed {
@@ -325,6 +369,81 @@ main::before {
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0.1px;
+}
+
+/* ─── Redesigned Stats Cards ─────────────────────────────── */
+.stat-card {
+  position: relative;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
+}
+
+.stat-card.blue { border-top: 3px solid #3b82f6 !important; }
+.stat-card.green { border-top: 3px solid #10b981 !important; }
+.stat-card.cyan { border-top: 3px solid #06b6d4 !important; }
+.stat-card.orange { border-top: 3px solid #f59e0b !important; }
+
+/* ─── Redesigned Trend Badges ────────────────────────────── */
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.trend-badge.green {
+  background-color: #ecfdf5;
+  color: #10b981;
+}
+
+.trend-badge.yellow {
+  background-color: #fffbeb;
+  color: #f59e0b;
+}
+
+/* ─── Redesigned Recent Activity Timeline ────────────────── */
+.timeline-container {
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+  z-index: 1;
+}
+
+.timeline-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.timeline-icon-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
 }
 
 /* ─── Modal ──────────────────────────────────────────────── */

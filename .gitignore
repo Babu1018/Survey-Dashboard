@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local env overrides (commit .env.example instead)
+.env
+.env.local

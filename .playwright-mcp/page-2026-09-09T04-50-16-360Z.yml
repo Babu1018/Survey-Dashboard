@@ -1,0 +1,162 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e6]:
+      - generic [ref=f16e7]:
+        - generic [ref=f16e8]: SF
+        - generic [ref=f16e9]: SurveyFlow
+      - button [ref=f16e10] [cursor=pointer]
+    - navigation [ref=f16e14]:
+      - link "Dashboard" [ref=f16e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f16e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f16e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f16e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f16e48]:
+    - banner [ref=f16e49]:
+      - generic [ref=f16e51]:
+        - button "Notifications" [ref=f16e53] [cursor=pointer]
+        - generic [ref=f16e59] [cursor=pointer]:
+          - generic [ref=f16e60]: AD
+          - generic [ref=f16e61]:
+            - generic [ref=f16e62]: Admin User
+            - generic [ref=f16e63]: Admin
+    - main [ref=f16e66]:
+      - generic [ref=f16e68]:
+        - generic [ref=f16e69]:
+          - generic [ref=f16e71]:
+            - button "Back" [ref=f16e72] [cursor=pointer]
+            - heading "Create Survey" [level=1] [ref=f16e76]
+          - generic [ref=f16e77]:
+            - button "Download Template" [ref=f16e79] [cursor=pointer]
+            - generic [ref=f16e86]:
+              - button "Upload Type" [active] [ref=f16e87] [cursor=pointer]
+              - generic [ref=f16e353]:
+                - generic "Upload standard English sheet for AI automatic translation" [ref=f16e354] [cursor=pointer]:
+                  - generic [ref=f16e358]:
+                    - generic [ref=f16e359]: Upload Automation
+                    - generic [ref=f16e360]: Single sheet. AI translates it.
+                - generic "Upload 13-sheet workbook with manual translations" [ref=f16e361] [cursor=pointer]:
+                  - generic [ref=f16e366]:
+                    - generic [ref=f16e367]: Upload Manually
+                    - generic [ref=f16e368]: 13-sheet workbook, manual translations.
+            - button "Validate & Test" [ref=f16e93] [cursor=pointer]
+            - button "Save" [ref=f16e96] [cursor=pointer]
+        - generic [ref=f16e101]:
+          - generic [ref=f16e102]:
+            - generic [ref=f16e103]:
+              - generic [ref=f16e104]: SURVEY NAME *
+              - textbox "Technical Skills Assessment" [ref=f16e130]:
+                - /placeholder: e.g. Technical Skills Assessment
+            - generic [ref=f16e106]:
+              - generic [ref=f16e107]: SURVEY BRANCH *
+              - generic [ref=f16e108]:
+                - combobox [ref=f16e110]:
+                  - option "AI" [selected]
+                  - option "Developer"
+                  - option "DevOps"
+                  - option "prison"
+                  - option "+ Add New Category..."
+                - button "Delete Category" [ref=f16e111] [cursor=pointer]
+          - generic [ref=f16e115]:
+            - generic [ref=f16e116]: SURVEY DESCRIPTION *
+            - textbox "e.g. This survey collects user feedback about our product's performance and usability." [ref=f16e117]: This survey collects a structured assessment of technical skills for the annual performance review.
+        - generic [ref=f16e132]:
+          - generic "Drag to reorder or move to another section" [ref=f16e133]
+          - generic [ref=f16e143]:
+            - generic [ref=f16e144]:
+              - generic [ref=f16e145]:
+                - generic [ref=f16e146]: "1"
+                - generic [ref=f16e147]: NEW QUESTION
+              - generic [ref=f16e148]:
+                - button "Question Options" [ref=f16e150] [cursor=pointer]
+                - button "Duplicate Question" [ref=f16e155] [cursor=pointer]
+                - button [ref=f16e159] [cursor=pointer]
+            - generic [ref=f16e163]:
+              - generic [ref=f16e164]:
+                - generic [ref=f16e165]:
+                  - generic [ref=f16e166]: QUESTION *
+                  - textbox "Enter your question here..." [ref=f16e167]: How would you rate your proficiency with the primary technology stack?
+                - generic [ref=f16e168]:
+                  - generic [ref=f16e169]: MEDIA ATTACHMENTS
+                  - button "Add images or audio" [ref=f16e171] [cursor=pointer]
+              - generic [ref=f16e173]:
+                - generic [ref=f16e174]:
+                  - generic [ref=f16e175]:
+                    - generic [ref=f16e176]: ANSWER TYPE *
+                    - combobox [ref=f16e177]:
+                      - option "Short Text Answer"
+                      - option "Paragraph Answer"
+                      - option "Number Input"
+                      - option "Phone Number (10 digits)"
+                      - option "Single Choice (Radio Buttons)" [selected]
+                      - option "Multiple Choice (Checkboxes)"
+                      - option "Rating Scale"
+                      - option "Ranking (Drag to Order)"
+                      - option "Matrix / Grid"
+                      - option "Media Upload"
+                  - generic [ref=f16e189]:
+                    - generic [ref=f16e190]: Choice Options
+                    - button "Add Option" [ref=f16e191] [cursor=pointer]
+                - generic [ref=f16e195]:
+                  - generic [ref=f16e196]:
+                    - generic [ref=f16e197]:
+                      - textbox "Choice 1 text..." [ref=f16e198]
+                      - generic "Points this option contributes to the question's score when selected" [ref=f16e255]:
+                        - spinbutton [ref=f16e256]: "0"
+                        - generic [ref=f16e257]: pts
+                      - button "Remove Choice" [ref=f16e199] [cursor=pointer]
+                    - generic [ref=f16e203]:
+                      - generic [ref=f16e204]:
+                        - generic [ref=f16e205]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f16e206]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f16e207] [cursor=pointer]
+                      - generic [ref=f16e208]:
+                        - generic [ref=f16e209]: Media
+                        - button "Add images or audio" [ref=f16e211] [cursor=pointer]
+                  - generic [ref=f16e213]:
+                    - generic [ref=f16e214]:
+                      - textbox "Choice 2 text..." [ref=f16e215]
+                      - generic "Points this option contributes to the question's score when selected" [ref=f16e258]:
+                        - spinbutton [ref=f16e259]: "0"
+                        - generic [ref=f16e260]: pts
+                      - button "Remove Choice" [ref=f16e216] [cursor=pointer]
+                    - generic [ref=f16e220]:
+                      - generic [ref=f16e221]:
+                        - generic [ref=f16e222]: Jump Route
+                        - combobox "Where picking this specific answer sends the respondent. Different answers can lead to different questions." [ref=f16e223]:
+                          - option "Next Question" [selected]
+                          - option "End of Survey"
+                          - option "Go to Q1"
+                      - button "+ Sub Section" [ref=f16e224] [cursor=pointer]
+                      - generic [ref=f16e225]:
+                        - generic [ref=f16e226]: Media
+                        - button "Add images or audio" [ref=f16e228] [cursor=pointer]
+            - generic [ref=f16e261]:
+              - generic [ref=f16e262]: SCORE-BASED ROUTING
+              - generic [ref=f16e267]:
+                - generic [ref=f16e268]:
+                  - generic [ref=f16e269]: COMBINE SCORES FROM
+                  - button "Q1 (Self)" [ref=f16e272] [cursor=pointer]
+                  - generic [ref=f16e273]: Pick the questions whose points add together. Select just this one to route on its own score.
+                - generic [ref=f16e274]:
+                  - generic [ref=f16e275]: SCORE RULES
+                  - generic [ref=f16e277]:
+                    - generic [ref=f16e278]: If ≥
+                    - spinbutton "Minimum combined score for this rule to apply" [ref=f16e279]: "1"
+                    - combobox "Where to go when this rule wins" [ref=f16e280]:
+                      - option "Choose a target..." [selected]
+                      - option "End of Survey"
+                    - button "Remove this rule" [ref=f16e281] [cursor=pointer]
+                  - button "+ Add Rule" [ref=f16e285] [cursor=pointer]
+                  - generic [ref=f16e286]: Each rule means “score is at least this many points”. When several match, the highest one wins. If no rule matches, the survey continues normally.
+        - generic [ref=f16e178]:
+          - generic [ref=f16e179]:
+            - button "Add Section" [ref=f16e180] [cursor=pointer]
+            - button "Add Question" [ref=f16e182] [cursor=pointer]
+          - button "Save" [ref=f16e184] [cursor=pointer]

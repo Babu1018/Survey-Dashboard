@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastapi-authentik-bridge"
+version = "0.1.0"
+description = "Reusable Authentik login and authorization integration for FastAPI"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115",
+  "requests>=2.32",
+  "python-dotenv>=1.0",
+  "python-jose[cryptography]>=3.3",
+  "pydantic>=2.8",
+  "email-validator>=2.2",
+]
+
+[tool.setuptools.packages.find]
+include = ["authentik_auth*"]

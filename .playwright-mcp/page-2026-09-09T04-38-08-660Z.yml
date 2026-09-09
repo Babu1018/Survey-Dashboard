@@ -1,0 +1,47 @@
+- generic [ref=f14e3]:
+  - complementary [ref=f14e4]:
+    - generic [ref=f14e6]:
+      - generic [ref=f14e7]:
+        - generic [ref=f14e8]: SF
+        - generic [ref=f14e9]: SurveyFlow
+      - button [ref=f14e10] [cursor=pointer]
+    - navigation [ref=f14e14]:
+      - link "My Survey" [ref=f14e15] [cursor=pointer]:
+        - /url: /
+  - generic [ref=f14e20]:
+    - banner [ref=f14e21]:
+      - generic [ref=f14e23]:
+        - button "Notifications" [ref=f14e25] [cursor=pointer]
+        - generic [ref=f14e31] [cursor=pointer]:
+          - generic [ref=f14e32]: U
+          - generic [ref=f14e33]:
+            - generic [ref=f14e34]: user1
+            - generic [ref=f14e35]: User
+    - main [ref=f14e38]:
+      - generic [ref=f14e40]:
+        - generic [ref=f14e41]:
+          - heading "Welcome, user1" [level=1] [ref=f14e42]
+          - paragraph [ref=f14e43]: Your assigned survey and submission history.
+        - generic [ref=f14e44]:
+          - generic [ref=f14e45]:
+            - generic [ref=f14e46]: Assigned Survey
+            - generic [ref=f14e52]: "1"
+            - generic [ref=f14e53]: 1 branch active
+          - generic [ref=f14e54]:
+            - generic [ref=f14e55]: Approved Survey
+            - generic [ref=f14e61]: "0"
+            - generic [ref=f14e62]: 0% of total
+          - generic [ref=f14e63]:
+            - generic [ref=f14e64]: Surveys In Progress
+            - generic [ref=f14e72]: "0"
+            - generic [ref=f14e73]: 0 awaiting review
+        - generic [ref=f14e82] [cursor=pointer]:
+          - generic [ref=f14e83]:
+            - heading "rate" [level=3] [ref=f14e84]
+            - generic [ref=f14e85]: CLOSED
+          - generic [ref=f14e86]: Created —
+        - generic [ref=f14e92]:
+          - generic [ref=f14e93]:
+            - heading "Submission History" [level=2] [ref=f14e94]
+            - generic [ref=f14e95]: 0 submissions
+          - generic [ref=f14e96]: You haven't submitted any surveys yet.

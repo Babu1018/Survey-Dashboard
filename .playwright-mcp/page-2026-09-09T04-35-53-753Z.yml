@@ -1,0 +1,54 @@
+- generic [ref=f9e35]:
+  - complementary [ref=f9e36]:
+    - generic [ref=f9e38]:
+      - generic [ref=f9e39]:
+        - generic [ref=f9e40]: SF
+        - generic [ref=f9e41]: SurveyFlow
+      - button [ref=f9e42] [cursor=pointer]
+    - navigation [ref=f9e46]:
+      - link "Dashboard" [ref=f9e47] [cursor=pointer]:
+        - /url: /
+      - link "Users" [ref=f9e55] [cursor=pointer]:
+        - /url: /users
+      - link "Surveys" [ref=f9e63] [cursor=pointer]:
+        - /url: /review
+  - generic [ref=f9e68]:
+    - banner [ref=f9e69]:
+      - generic [ref=f9e71]:
+        - button "Notifications" [ref=f9e73] [cursor=pointer]
+        - generic [ref=f9e79] [cursor=pointer]:
+          - generic [ref=f9e80]: M
+          - generic [ref=f9e81]:
+            - generic [ref=f9e82]: manager1
+            - generic [ref=f9e83]: Manager
+    - main [ref=f9e86]:
+      - generic [ref=f9e88]:
+        - generic [ref=f9e89]:
+          - heading "Welcome, manager1" [level=1] [ref=f9e90]
+          - paragraph [ref=f9e91]: You have nothing awaiting review today.
+        - generic [ref=f9e92]:
+          - generic [ref=f9e93]:
+            - generic [ref=f9e94]: Surveys Assigned
+            - generic [ref=f9e100]: "0"
+            - generic [ref=f9e101]: 0 Active
+          - generic [ref=f9e102]:
+            - generic [ref=f9e103]: Questions Reviewed
+            - generic [ref=f9e109]: "0"
+            - generic [ref=f9e110]: 0 approved · 0 declined
+          - generic [ref=f9e111] [cursor=pointer]:
+            - generic [ref=f9e112]: Pending Questions
+            - generic [ref=f9e119]: "0"
+            - generic [ref=f9e120]: Needs your action
+          - generic [ref=f9e121]:
+            - generic [ref=f9e122]: Field Users
+            - generic [ref=f9e130]: "0"
+            - generic [ref=f9e131]: 0 active in branch
+        - generic [ref=f9e132]:
+          - generic [ref=f9e133]:
+            - generic [ref=f9e134]:
+              - heading "Your Recent Access" [level=3] [ref=f9e135]
+              - button "View all" [ref=f9e136] [cursor=pointer]
+            - generic [ref=f9e139]: No activity yet.
+          - generic [ref=f9e141]:
+            - heading "Survey Review Progress" [level=3] [ref=f9e142]
+            - generic [ref=f9e143]: No surveys in your scope yet.

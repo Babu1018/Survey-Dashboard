@@ -1,0 +1,45 @@
+- generic [ref=f10e3]:
+  - complementary [ref=f10e4]:
+    - generic [ref=f10e6]:
+      - generic [ref=f10e7]:
+        - generic [ref=f10e8]: SF
+        - generic [ref=f10e9]: SurveyFlow
+      - button [ref=f10e10] [cursor=pointer]
+    - navigation [ref=f10e14]:
+      - link "Dashboard" [ref=f10e15] [cursor=pointer]:
+        - /url: /
+      - link "Users" [ref=f10e23] [cursor=pointer]:
+        - /url: /users
+      - link "Surveys" [ref=f10e31] [cursor=pointer]:
+        - /url: /review
+  - generic [ref=f10e36]:
+    - banner [ref=f10e37]:
+      - generic [ref=f10e39]:
+        - button "Notifications" [ref=f10e41] [cursor=pointer]
+        - generic [ref=f10e47] [cursor=pointer]:
+          - generic [ref=f10e48]: M
+          - generic [ref=f10e49]:
+            - generic [ref=f10e50]: manager1
+            - generic [ref=f10e51]: Manager
+    - main [ref=f10e54]:
+      - generic [ref=f10e56]:
+        - generic [ref=f10e58]:
+          - heading "Report Approvals" [level=1] [ref=f10e59]
+          - paragraph [ref=f10e60]: Review submitted reports and approve or reject them.
+        - generic [ref=f10e61]:
+          - generic [ref=f10e62]:
+            - textbox "Search surveys or respondents…" [ref=f10e67]
+            - button "All Time" [ref=f10e69] [cursor=pointer]
+          - button "Select" [ref=f10e76] [cursor=pointer]
+        - generic [ref=f10e80]:
+          - generic [ref=f10e81]:
+            - generic [ref=f10e82]: S.No
+            - generic [ref=f10e83]: Survey Details
+            - generic [ref=f10e84]: Respondent
+            - generic [ref=f10e85]: Risk
+            - generic [ref=f10e86]: Status
+            - generic [ref=f10e87]: Time
+            - generic [ref=f10e88]: VIEW
+          - generic [ref=f10e90]:
+            - paragraph [ref=f10e94]: No responses found.
+            - paragraph [ref=f10e95]: Waiting for incoming survey submissions…

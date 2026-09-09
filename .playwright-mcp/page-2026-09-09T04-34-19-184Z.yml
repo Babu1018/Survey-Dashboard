@@ -1,0 +1,100 @@
+- generic [ref=f3e35]:
+  - complementary [ref=f3e36]:
+    - generic [ref=f3e38]:
+      - generic [ref=f3e39]:
+        - generic [ref=f3e40]: SF
+        - generic [ref=f3e41]: SurveyFlow
+      - button [ref=f3e42] [cursor=pointer]
+    - navigation [ref=f3e46]:
+      - link "Dashboard" [ref=f3e47] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f3e55] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f3e60] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f3e75] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f3e80]:
+    - banner [ref=f3e81]:
+      - generic [ref=f3e83]:
+        - button "Notifications" [ref=f3e85] [cursor=pointer]
+        - generic [ref=f3e91] [cursor=pointer]:
+          - generic [ref=f3e92]: AD
+          - generic [ref=f3e93]:
+            - generic [ref=f3e94]: Admin User
+            - generic [ref=f3e95]: Admin
+    - main [ref=f3e98]:
+      - generic [ref=f3e100]:
+        - generic [ref=f3e103]:
+          - heading "Welcome, Administrator" [level=1] [ref=f3e104]
+          - paragraph [ref=f3e105]: Real-time summary of all platform activity.
+        - generic [ref=f3e108]:
+          - generic [ref=f3e109]:
+            - heading "Total Users" [level=4] [ref=f3e117]
+            - generic [ref=f3e119]:
+              - text: "4"
+              - generic [ref=f3e120]: /4
+            - generic [ref=f3e121]: 3 branches active
+            - generic [ref=f3e122]: ↑ +4 this month
+          - generic [ref=f3e123]:
+            - heading "Total Surveys" [level=4] [ref=f3e130]
+            - generic [ref=f3e131]: "3"
+            - generic [ref=f3e132]: 2 categories created
+            - generic [ref=f3e133]: +2 vs last week
+          - generic [ref=f3e134]:
+            - heading "Total Responses Collected" [level=4] [ref=f3e139]
+            - generic [ref=f3e140]: 14,550
+            - generic [ref=f3e141]: All-time verified responses
+            - generic [ref=f3e142]: ↑ +1,870 this month
+          - generic [ref=f3e143]:
+            - heading "Surveys In Progress" [level=4] [ref=f3e149]
+            - generic [ref=f3e150]: "3"
+            - generic [ref=f3e151]: 0 responses awaiting review
+            - generic [ref=f3e152]: +7 this week
+        - generic [ref=f3e153]:
+          - generic [ref=f3e156]:
+            - heading "Category Distribution" [level=3] [ref=f3e157]
+            - generic [ref=f3e158]:
+              - generic [ref=f3e159]:
+                - generic [ref=f3e160]:
+                  - generic [ref=f3e161]: AI
+                  - generic [ref=f3e162]: 1 users
+                - generic [ref=f3e164]: 1 surveys 0 responses
+              - generic [ref=f3e165]:
+                - generic [ref=f3e166]:
+                  - generic [ref=f3e167]: prison
+                  - generic [ref=f3e168]: 1 users
+                - generic [ref=f3e170]: 2 surveys 0 responses
+          - generic [ref=f3e173]:
+            - heading "Recent Activity" [level=3] [ref=f3e174]
+            - generic [ref=f3e175]:
+              - generic [ref=f3e176] [cursor=pointer]:
+                - generic [ref=f3e181]:
+                  - generic [ref=f3e182]: Manager → Manager
+                  - generic [ref=f3e184]: Survey Created – AI Branch
+                - generic [ref=f3e185]: 15 hours ago
+              - generic [ref=f3e189] [cursor=pointer]:
+                - generic [ref=f3e194]:
+                  - generic [ref=f3e195]: Manager → Manager
+                  - generic [ref=f3e197]: Survey Created – prison Branch
+                - generic [ref=f3e198]: 1 day ago
+              - generic [ref=f3e202] [cursor=pointer]:
+                - generic [ref=f3e207]:
+                  - generic [ref=f3e208]: Manager → Manager
+                  - generic [ref=f3e210]: Survey Created – prison Branch
+                - generic [ref=f3e211]: 8/31/2026
+              - generic [ref=f3e215] [cursor=pointer]:
+                - generic [ref=f3e220]:
+                  - generic [ref=f3e221]: User → tester1
+                  - generic [ref=f3e223]: New User onboarded – manager1's Reviews Branch
+                - generic [ref=f3e224]: 8/27/2026
+              - generic [ref=f3e228] [cursor=pointer]:
+                - generic [ref=f3e233]:
+                  - generic [ref=f3e234]: User → manager1
+                  - generic [ref=f3e236]: New Manager onboarded – Kuppam Branch
+                - generic [ref=f3e237]: 8/24/2026
+              - generic [ref=f3e241] [cursor=pointer]:
+                - generic [ref=f3e246]:
+                  - generic [ref=f3e247]: User → user1
+                  - generic [ref=f3e249]: New User onboarded – manager1's Reviews Branch
+                - generic [ref=f3e250]: 8/20/2026

@@ -1,0 +1,42 @@
+- generic [ref=f14e3]:
+  - complementary [ref=f14e4]:
+    - generic [ref=f14e6]:
+      - generic [ref=f14e7]:
+        - generic [ref=f14e8]: SF
+        - generic [ref=f14e9]: SurveyFlow
+      - button [ref=f14e10] [cursor=pointer]
+    - navigation [ref=f14e14]:
+      - link "My Survey" [ref=f14e15] [cursor=pointer]:
+        - /url: /
+  - generic [ref=f14e20]:
+    - banner [ref=f14e21]:
+      - generic [ref=f14e23]:
+        - button "2" [ref=f14e98] [cursor=pointer]
+        - generic [ref=f14e31] [cursor=pointer]:
+          - generic [ref=f14e32]: U
+          - generic [ref=f14e33]:
+            - generic [ref=f14e34]: user1
+            - generic [ref=f14e35]: User
+    - main [ref=f14e38]:
+      - generic [ref=f14e100]:
+        - generic [ref=f14e101]:
+          - heading "My Surveys" [level=2] [ref=f14e102]
+          - paragraph [ref=f14e103]: Select an assigned survey to begin your entry.
+        - button "AI rate" [ref=f14e105] [cursor=pointer]:
+          - generic [ref=f14e111]:
+            - generic [ref=f14e112]: AI
+            - generic [ref=f14e113]: rate
+        - generic [ref=f14e116]:
+          - generic [ref=f14e118]:
+            - button "Back" [ref=f14e120] [cursor=pointer]
+            - generic [ref=f14e127]:
+              - generic [ref=f14e128]: U
+              - generic [ref=f14e129]:
+                - generic [ref=f14e130]: user1
+                - generic [ref=f14e131]: User
+          - generic [ref=f14e134]:
+            - generic [ref=f14e135]:
+              - generic [ref=f14e136]: Respondent Identification
+              - textbox "Enter your registered email ID" [ref=f14e141]: user1@gmail.com
+              - paragraph [ref=f14e142]: We use this to track your assessment progress and save your results.
+            - button "Start Survey" [ref=f14e143] [cursor=pointer]

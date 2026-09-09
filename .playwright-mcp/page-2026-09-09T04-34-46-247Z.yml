@@ -1,0 +1,50 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e6]:
+      - generic [ref=f5e7]:
+        - generic [ref=f5e8]: SF
+        - generic [ref=f5e9]: SurveyFlow
+      - button [ref=f5e10] [cursor=pointer]
+    - navigation [ref=f5e14]:
+      - link "Dashboard" [ref=f5e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f5e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f5e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f5e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f5e48]:
+    - banner [ref=f5e49]:
+      - generic [ref=f5e51]:
+        - button "Notifications" [ref=f5e53] [cursor=pointer]
+        - generic [ref=f5e59] [cursor=pointer]:
+          - generic [ref=f5e60]: AD
+          - generic [ref=f5e61]:
+            - generic [ref=f5e62]: Admin User
+            - generic [ref=f5e63]: Admin
+    - main [ref=f5e66]:
+      - generic [ref=f5e68]:
+        - generic [ref=f5e69]:
+          - generic [ref=f5e70]:
+            - heading "Activity Log" [level=1] [ref=f5e71]
+            - generic "Offline — reconnecting…" [ref=f5e76]: Offline
+          - button "Refresh" [disabled] [ref=f5e78] [cursor=pointer]
+        - generic [ref=f5e84]:
+          - textbox "Search logs by name, survey, action..." [ref=f5e89]
+          - generic [ref=f5e90]:
+            - generic [ref=f5e91]:
+              - generic [ref=f5e92]: "Filter by Role:"
+              - button "All Roles" [ref=f5e94] [cursor=pointer]
+            - generic [ref=f5e97]:
+              - generic [ref=f5e98]: "Activity Type:"
+              - button "All Activities" [ref=f5e100] [cursor=pointer]
+        - generic [ref=f5e105]:
+          - generic [ref=f5e106]:
+            - generic [ref=f5e107]: Status
+            - generic [ref=f5e108]: User
+            - generic [ref=f5e109]: Role
+            - generic [ref=f5e110]: Action
+            - generic [ref=f5e111]: Survey
+            - generic [ref=f5e112]: Timestamp
+          - paragraph [ref=f5e119]: No matching activities found.

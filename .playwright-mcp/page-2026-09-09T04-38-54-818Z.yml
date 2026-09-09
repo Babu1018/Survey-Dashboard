@@ -1,0 +1,59 @@
+- generic [ref=f14e3]:
+  - complementary [ref=f14e4]:
+    - generic [ref=f14e6]:
+      - generic [ref=f14e7]:
+        - generic [ref=f14e8]: SF
+        - generic [ref=f14e9]: SurveyFlow
+      - button [ref=f14e10] [cursor=pointer]
+    - navigation [ref=f14e14]:
+      - link "My Survey" [ref=f14e15] [cursor=pointer]:
+        - /url: /
+  - generic [ref=f14e20]:
+    - banner [ref=f14e21]:
+      - generic [ref=f14e23]:
+        - button "2" [ref=f14e98] [cursor=pointer]
+        - generic [ref=f14e31] [cursor=pointer]:
+          - generic [ref=f14e32]: U
+          - generic [ref=f14e33]:
+            - generic [ref=f14e34]: user1
+            - generic [ref=f14e35]: User
+    - main [ref=f14e38]:
+      - generic [ref=f14e100]:
+        - generic [ref=f14e101]:
+          - heading "My Surveys" [level=2] [ref=f14e102]
+          - paragraph [ref=f14e103]: Select an assigned survey to begin your entry.
+        - button "AI rate" [ref=f14e105] [cursor=pointer]:
+          - generic [ref=f14e111]:
+            - generic [ref=f14e112]: AI
+            - generic [ref=f14e113]: rate
+        - generic [ref=f14e116]:
+          - generic [ref=f14e118]:
+            - button "Back" [ref=f14e120] [cursor=pointer]
+            - generic [ref=f14e127]:
+              - generic [ref=f14e128]: U
+              - generic [ref=f14e129]:
+                - generic [ref=f14e130]: user1
+                - generic [ref=f14e131]: User
+          - generic [ref=f14e133]:
+            - generic [ref=f14e147]:
+              - generic [ref=f14e148]: Question 1 of 8
+              - generic [ref=f14e149]: 13%
+            - generic [ref=f14e152]:
+              - generic [ref=f14e153]:
+                - generic [ref=f14e154]:
+                  - generic [ref=f14e155]: "1"
+                  - generic [ref=f14e156]: hi*
+                - generic [ref=f14e157]:
+                  - generic [ref=f14e158]:
+                    - generic [ref=f14e159]: Low
+                    - generic [ref=f14e160]: High
+                  - generic [ref=f14e161]:
+                    - generic [ref=f14e162] [cursor=pointer]: "1"
+                    - generic [ref=f14e164] [cursor=pointer]: "2"
+                    - generic [ref=f14e166] [cursor=pointer]: "3"
+                    - generic [ref=f14e168] [cursor=pointer]: "4"
+                    - generic [ref=f14e170] [cursor=pointer]: "5"
+              - generic [ref=f14e181]:
+                - button "Back" [ref=f14e182] [cursor=pointer]
+                - button "Next Question" [ref=f14e185] [cursor=pointer]
+              - paragraph [ref=f14e188]: 0 of 8 answered • This question is required to continue

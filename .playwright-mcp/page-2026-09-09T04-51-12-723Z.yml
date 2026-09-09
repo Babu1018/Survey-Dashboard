@@ -1,0 +1,56 @@
+- generic [ref=f17e3]:
+  - complementary [ref=f17e4]:
+    - generic [ref=f17e6]:
+      - generic [ref=f17e7]:
+        - generic [ref=f17e8]: SF
+        - generic [ref=f17e9]: SurveyFlow
+      - button [ref=f17e10] [cursor=pointer]
+    - navigation [ref=f17e14]:
+      - link "Dashboard" [ref=f17e15] [cursor=pointer]:
+        - /url: /
+      - link "Branches" [ref=f17e23] [cursor=pointer]:
+        - /url: /surveys
+      - link "Manage Users" [ref=f17e28] [cursor=pointer]:
+        - /url: /assigner
+      - link "Activity Log" [ref=f17e43] [cursor=pointer]:
+        - /url: /user-logs
+  - generic [ref=f17e48]:
+    - banner [ref=f17e49]:
+      - generic [ref=f17e51]:
+        - button "Notifications" [ref=f17e53] [cursor=pointer]
+        - generic [ref=f17e59] [cursor=pointer]:
+          - generic [ref=f17e60]: AD
+          - generic [ref=f17e61]:
+            - generic [ref=f17e62]: Admin User
+            - generic [ref=f17e63]: Admin
+    - main [ref=f17e66]:
+      - generic [ref=f17e68]:
+        - generic [ref=f17e70]:
+          - generic [ref=f17e71]:
+            - heading "Manage Users" [level=1] [ref=f17e72]
+            - paragraph [ref=f17e73]: Manage user profiles, roles, permissions, and access across the platform.
+          - generic [ref=f17e74]:
+            - button "Create User" [ref=f17e75] [cursor=pointer]
+            - button "Add Groups" [active] [ref=f17e77] [cursor=pointer]
+        - generic [ref=f17e227]:
+          - button "Back to Users" [ref=f17e228] [cursor=pointer]
+          - generic [ref=f17e231]:
+            - generic [ref=f17e232]:
+              - generic [ref=f17e233]:
+                - heading "Add Group" [level=3] [ref=f17e234]
+                - generic [ref=f17e235]:
+                  - textbox "Group name..." [ref=f17e236]
+                  - button "Add" [ref=f17e237] [cursor=pointer]
+              - generic [ref=f17e238]:
+                - heading "Active Groups" [level=3] [ref=f17e239]
+                - generic [ref=f17e240]:
+                  - generic [ref=f17e241] [cursor=pointer]:
+                    - generic [ref=f17e242]: dev-team1
+                    - generic [ref=f17e249]: "0"
+                  - generic [ref=f17e250] [cursor=pointer]:
+                    - generic [ref=f17e251]: ops-team1
+                    - generic [ref=f17e258]: "0"
+                  - generic [ref=f17e259] [cursor=pointer]:
+                    - generic [ref=f17e260]: manager1's Reviews
+                    - generic [ref=f17e267]: "2"
+            - generic [ref=f17e268]: Select a group to manage
